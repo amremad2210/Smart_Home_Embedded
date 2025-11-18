@@ -1,0 +1,33 @@
+# Build output folders (IAR)
+[Dd]ebug/
+[Rr]elease/
+
+# IAR generated files
+*.dep
+*.ewd
+*.ewt
+*.pbd
+*.pbi
+*.xcl
+*.dbl
+
+# Object / binary files
+*.o
+*.obj
+*.out
+*.hex
+*.bin
+*.map
+*.lst
+
+# User / IDE settings
+settings/
+*.user
+*.wsdt
+
+# Misc
+*.log
+*.tmp
+*.bak
+Thumbs.db
+.DS_Store

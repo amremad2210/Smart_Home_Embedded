@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspace>
+    <project>
+        <path>$WS_DIR$\CONTROL_WS\Control_WS.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\HIMI_WS\HIMI_WS.ewp</path>
+    </project>
+    <batchBuild />
+</workspace>
