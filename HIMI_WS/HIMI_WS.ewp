@@ -2092,6 +2092,9 @@
             <name>$PROJ_DIR$\inc\common_macros.h</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\inc\gpio.h</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\inc\tm4c123gh6pm.h</name>
         </file>
         <file>
@@ -2100,6 +2103,9 @@
     </group>
     <group>
         <name>src</name>
+        <file>
+            <name>$PROJ_DIR$\src\gpio.c</name>
+        </file>
     </group>
     <file>
         <name>$PROJ_DIR$\main.c</name>
