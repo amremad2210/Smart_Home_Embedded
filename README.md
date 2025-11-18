@@ -213,20 +213,6 @@ Try to keep modules small and focused (e.g. `motor.c`, `buzzer.c`, `lcd.c`).
 
 ---
 
-## 8. Getting help
-
-If something doesn’t build:
-
-1. Check you are on the correct branch:
-   `git status`
-2. Make sure you pulled the latest changes:
-   `git pull`
-3. Clean and rebuild project in IAR.
-4. If still broken, open an issue on GitHub or ask on the team chat.
-
----
-
-Happy hacking 🚀
 
 ```
 
