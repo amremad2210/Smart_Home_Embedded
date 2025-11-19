@@ -36,5 +36,8 @@
 
 #define GET_BIT(REG,BIT) ( ( REG & (1<<BIT) ) >> BIT )
 
+#define LOGIC_HIGH      1
+#define LOGIC_LOW       0
+
 
 #endif
