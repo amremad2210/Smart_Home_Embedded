@@ -1,0 +1,163 @@
+/******************************************************************************
+ *
+ * Module: GPIO
+ *
+ * File Name: gpio.h
+ *
+ * Description: Header file for the TM4C123GH6PM (Tiva-C LaunchPad) GPIO driver
+ *
+ * Note:
+ *      * writePin/writePort ONLY drive output values via GPIODATA.
+ *      * Pull-ups / pull-downs are configured explicitly via dedicated APIs.
+ *
+ *******************************************************************************/
+
+#ifndef GPIO_H_
+#define GPIO_H_
+
+#include "Types.h"
+
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+
+/*
+ * TM4C123GH6PM has GPIO ports A–F (some pins are locked or reserved).
+ */
+
+#define NUM_OF_PORTS            6
+#define NUM_OF_PINS_PER_PORT    8
+
+#define PORTA_ID                0
+#define PORTB_ID                1
+#define PORTC_ID                2
+#define PORTD_ID                3
+#define PORTE_ID                4
+#define PORTF_ID                5
+
+#define PIN0_ID                 0
+#define PIN1_ID                 1
+#define PIN2_ID                 2
+#define PIN3_ID                 3
+#define PIN4_ID                 4
+#define PIN5_ID                 5
+#define PIN6_ID                 6
+#define PIN7_ID                 7
+
+/*******************************************************************************
+ *                               Types Declaration                             *
+ *******************************************************************************/
+
+typedef enum
+{
+    PIN_INPUT,
+    PIN_OUTPUT
+} GPIO_PinDirectionType;
+
+typedef enum
+{
+    PORT_INPUT,
+    PORT_OUTPUT = 0xFF
+} GPIO_PortDirectionType;
+
+/*******************************************************************************
+ *                              Functions Prototypes                           *
+ *******************************************************************************/
+
+/*
+ * Description :
+ * Enable the clock for the required GPIO port and wait until it is ready.
+ * Must be called BEFORE any other GPIO operation on that port.
+ */
+void GPIO_enableClock(uint8_t port_num);
+
+/*
+ * Description :
+ * Setup the direction of the required pin input/output.
+ * If the input port number or pin number are not correct, the function will not
+ * handle the request.
+ *
+ * Note for Tiva-C:
+ *  - This function also enables the digital function (DEN) for the pin.
+ *  - Alternate function / analog mode are disabled for this pin (pure GPIO).
+ */
+void GPIO_setupPinDirection(uint8_t port_num, uint8_t pin_num, GPIO_PinDirectionType direction);
+
+/*
+ * Description :
+ * Configure the direction of all pins in the required port as input or output.
+ * If the direction value is PORT_INPUT all pins in this port should be input.
+ * If the direction value is PORT_OUTPUT all pins in this port should be output.
+ * If the input port number is not correct, the function will not handle the
+ * request.
+ *
+ * Note for Tiva-C:
+ *  - This function affects pins 0..7 of the selected port only.
+ *  - It also enables the digital function (DEN) for these pins and disables
+ *    alternate- and analog-functions.
+ */
+void GPIO_setupPortDirection(uint8_t port_num, GPIO_PortDirectionType direction);
+
+/*
+ * Description :
+ * Write the value Logic High or Logic Low on the required pin.
+ * Only meaningful when the pin is configured as OUTPUT; for input pins
+ * the write has no effect on the pin level (and does NOT change pull-ups).
+ * If the input port number or pin number are not correct, the function will not
+ * handle the request.
+ */
+void GPIO_writePin(uint8_t port_num, uint8_t pin_num, uint8_t value);
+
+/*
+ * Description :
+ * Write the value on the required port (lower 8 bits).
+ * Only pins configured as OUTPUT will be driven by the corresponding bits
+ * in "value". Input pins are not affected (and pull-ups are NOT modified).
+ * If the input port number is not correct, the function will not handle the
+ * request.
+ */
+void GPIO_writePort(uint8_t port_num, uint8_t value);
+
+/*
+ * Description :
+ * Read and return the value for the required pin, it should be Logic High or
+ * Logic Low.
+ * If the input port number or pin number are not correct, the function will
+ * return Logic Low.
+ */
+uint8_t GPIO_readPin(uint8_t port_num, uint8_t pin_num);
+
+/*
+ * Description :
+ * Read and return the value of the required port (lower 8 bits).
+ * If the input port number is not correct, the function will return ZERO value.
+ */
+uint8_t GPIO_readPort(uint8_t port_num);
+
+/*
+ * Description :
+ * Enable the internal pull-up resistor on the specified pin.
+ * The pin should be configured as INPUT for this to make sense.
+ */
+void GPIO_enablePullUp(uint8_t port_num, uint8_t pin_num);
+
+/*
+ * Description :
+ * Disable the internal pull-up resistor on the specified pin.
+ */
+void GPIO_disablePullUp(uint8_t port_num, uint8_t pin_num);
+
+/*
+ * Description :
+ * Enable the internal pull-down resistor on the specified pin.
+ * The pin should be configured as INPUT for this to make sense.
+ */
+void GPIO_enablePullDown(uint8_t port_num, uint8_t pin_num);
+
+/*
+ * Description :
+ * Disable the internal pull-down resistor on the specified pin.
+ */
+void GPIO_disablePullDown(uint8_t port_num, uint8_t pin_num);
+
+#endif /* GPIO_H_ */
