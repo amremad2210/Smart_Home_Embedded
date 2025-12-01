@@ -99,7 +99,7 @@
                 <option>
                     <name>GBECoreSlave</name>
                     <version>29</version>
-                    <state>38</state>
+                    <state>39</state>
                 </option>
                 <option>
                     <name>OGUseCmsis</name>
@@ -214,7 +214,7 @@
                 </option>
                 <option>
                     <name>CCDefines</name>
-                    <state></state>
+                    <state>PART_TM4C123GH6PM</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>
@@ -335,8 +335,10 @@
                 </option>
                 <option>
                     <name>CCIncludePath2</name>
-                    <state>$PROJ_DIR$/inc
-</state>
+                    <state>$PROJ_DIR$/inc</state>
+                    <state>C:\ti\TivaWare_C_Series-2.2.0.295\inc</state>
+                    <state>C:\ti\TivaWare_C_Series-2.2.0.295\driverlib</state>
+                    <state>C:\ti\TivaWare_C_Series-2.2.0.295</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -793,7 +795,7 @@
                 </option>
                 <option>
                     <name>IlinkAdditionalLibs</name>
-                    <state></state>
+                    <state>C:\ti\TivaWare_C_Series-2.2.0.295\driverlib\ewarm\Exe\driverlib.a</state>
                 </option>
                 <option>
                     <name>IlinkOverrideProgramEntryLabel</name>
@@ -2087,27 +2089,114 @@
         </settings>
     </configuration>
     <group>
+        <name>Common</name>
+        <group>
+            <name>inc</name>
+            <group>
+                <name>mcal</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_adc.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_eeprom.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_gpio.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_gpt.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_systick.h</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_uart.h</name>
+                </file>
+            </group>
+            <file>
+                <name>$PROJ_DIR$\..\Common\inc\common_macros.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Common\inc\system.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Common\inc\Types.h</name>
+            </file>
+        </group>
+        <group>
+            <name>src</name>
+            <group>
+                <name>mcal</name>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_adc.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_eeprom.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_gpio.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_gpt.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_systick.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_uart.c</name>
+                </file>
+            </group>
+            <file>
+                <name>$PROJ_DIR$\..\Common\src\system.c</name>
+            </file>
+        </group>
+    </group>
+    <group>
         <name>inc</name>
-        <file>
-            <name>$PROJ_DIR$\inc\common_macros.h</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\inc\gpio.h</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\inc\tm4c123gh6pm.h</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\inc\Types.h</name>
-        </file>
+        <group>
+            <name>hal</name>
+            <file>
+                <name>$PROJ_DIR$\inc\hal\hal_comm.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\inc\hal\hal_keypad.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\inc\hal\hal_lcd.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\inc\hal\hal_potentiometer.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\inc\hal\hal_rgb_led.h</name>
+            </file>
+        </group>
     </group>
     <group>
         <name>src</name>
-        <file>
-            <name>$PROJ_DIR$\src\gpio.c</name>
-        </file>
+        <group>
+            <name>hal</name>
+            <file>
+                <name>$PROJ_DIR$\src\hal_comm.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\src\hal_keypad.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\src\hal_lcd.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\src\hal_potentiometer.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\src\hal_rgb_led.c</name>
+            </file>
+        </group>
     </group>
     <file>
         <name>$PROJ_DIR$\main.c</name>
+    </file>
+    <file>
+        <name>$PROJ_DIR$\startup_ewarm.c</name>
     </file>
 </project>
