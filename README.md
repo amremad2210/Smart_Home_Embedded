@@ -1,220 +1,257 @@
 
-# Door Locker System – TM4C123 (Control & HMI ECUs)
+# Door Locker Security System – Dual TM4C123 ECUs
 
-This repository contains the embedded software for a **door locker system**
-implemented on **two TM4C123 (Tiva C) microcontrollers**:
+### *Embedded Systems Project – MCAL / HAL / Application Architecture*
 
-- **Control_WS** – Control ECU (motor, buzzer, EEPROM, logic)
-- **HIMI_WS** – HMI ECU (keypad, LCD, LEDs, user interface)
-
-Both projects are managed in a single IAR Embedded Workbench workspace.
+This repository contains the embedded software for a **Door Locker Security System** implemented on **two TM4C123 (Tiva C) microcontrollers** communicating over UART.
+The system is built using a clean, modular layered architecture (**MCAL → HAL → Application**) and integrates user interfaces, persistent storage, motor control, and security logic.
 
 ---
 
-## 1. Repository structure
+# 📘 Table of Contents
+
+1. [System Overview](#system-overview)
+2. [Hardware Architecture](#hardware-architecture)
+3. [Software Architecture](#software-architecture)
+4. [Project Folder Structure](#project-folder-structure)
+5. [TivaWare Integration](#tivaware-integration)
+6. [Build & Flash Instructions](#build--flash-instructions)
+7. [Git Workflow](#git-workflow)
+
+---
+
+# 1️ System Overview
+
+This system uses a pair of TM4C123 microcontrollers where:
+
+* **HMI_ECU** handles **user interface** components (LCD, keypad, RGB LED, timeout setting).
+* **Control_ECU** handles **core control logic**, including EEPROM storage, motor activation, buzzer alarm, and password validation.
+
+Based on the official project description.
+
+---
+
+# 2️ Hardware Architecture
+
+###  **HMI_ECU (User Interface)**
+
+* 16×2 LCD
+* 4×4 Keypad
+* RGB LED
+* Potentiometer (via ADC)
+* UART to Control ECU
+* SysTick for timing and debouncing
+
+###  **Control_ECU (Control Logic)**
+
+* DC Motor (PWM or GPIO control)
+* EEPROM for persistent password & timeout
+* Buzzer
+* UART to HMI ECU
+* GPTM timers
+* SysTick for system timing
+
+---
+
+# 3️ Software Architecture
+
+This project uses a clean embedded architecture using layered design:
+
+```
+Application (HMI_App / Control_App)
+        ↑
+      HAL (LCD, keypad, motor, buzzer, RGB LED, comm, pot)
+        ↑
+     MCAL (GPIO, UART, GPT, ADC, EEPROM, SysTick)
+        ↑
+   TivaWare (driverlib)  [Vendor Layer]
+        ↑
+   Hardware (TM4C123 MCU)
+```
+
+### Application Layer
+
+* Located in each ECU's `main.c`
+* Implements HMI or Control state machine logic
+* Calls only HAL functions
+
+###  HAL (Hardware Abstraction Layer)
+
+* Represents actual hardware modules (LCD, keypad, motor, etc.)
+* Uses MCAL functions internally
+
+###  MCAL (Microcontroller Abstraction Layer)
+
+* Shared across both ECUs in `Common/`
+* Thin wrappers over TivaWare driverlib
+* Handles low-level MCU operations:
+
+  * GPIO
+  * UART
+  * Timers
+  * EEPROM
+  * ADC
+  * SysTick
+
+###  TivaWare Vendor Layer
+
+* Not included inside repository
+* Linked using IAR configuration
+* Provides driverlib functions like:
+
+  * `GPIOPinWrite()`
+  * `UARTConfigSetExpClk()`
+  * `SysCtlClockSet()`
+  * `EEPROMProgram()`
+  * etc.
+
+---
+
+# 4️ Project Folder Structure
 
 ```text
-Project_WS/
-├─ Control_WS/
-│  ├─ main.c              # Application entry point (Control ECU)
-│  ├─ inc/                # Headers (types, macros, MCU header, etc.)
-│  ├─ src/                # Drivers & modules (will be added gradually)
-│  ├─ Debug/              # IAR build output (ignored by git)
-│  └─ settings/           # IAR debug settings (ignored by git)
+Smart_Home_WS/
 │
-├─ Himi_WS/
-│  ├─ main.c              # Application entry point (HMI ECU)
-│  ├─ inc/
-│  ├─ src/
-│  ├─ Debug/
-│  └─ settings/
+├── Common/
+│   ├── inc/
+│   │   ├── Types.h
+│   │   ├── common_macros.h
+│   │   ├── tm4c123gh6pm.h
+│   │   ├── system.h
+│   │   └── mcal/
+│   │       ├── mcal_gpio.h
+│   │       ├── mcal_uart.h
+│   │       ├── mcal_gpt.h
+│   │       ├── mcal_systick.h
+│   │       ├── mcal_eeprom.h
+│   │       └── mcal_adc.h
+│   └── src/
+│       ├── system.c
+│       └── mcal/
+│           ├── mcal_gpio.c
+│           ├── mcal_uart.c
+│           ├── mcal_gpt.c
+│           ├── mcal_systick.c
+│           ├── mcal_eeprom.c
+│           └── mcal_adc.c
 │
-├─ Smart_Home_WS.eww      # IAR workspace with both projects
-├─ .gitignore             # ignores builds, temp files, etc.
-└─ README.md
-````
-
-> **Rule of thumb**
->
-> * Put `.c` files in `src/` **(except main.c which stays at project root)**
-> * Put `.h` files in `inc/`
-> * Never commit anything from `Debug/` or `settings/`.
-
----
-
-## 2. Tools / requirements
-
-* **IAR Embedded Workbench for ARM** (same major version for all team members)
-* **Git** (command line or any GUI client)
-* TM4C123G LaunchPad (or equivalent board) for each ECU
-
----
-
-## 3. How to clone and open the project
-
-### 3.1 Clone the repository (first time)
-
-```bash
-# choose a folder to keep your projects, then:
-git clone https://github.com/<your-user>/<your-repo>.git
-cd <your-repo>
+├── Control_WS/
+│   ├── main.c
+│   ├── inc/
+│   │   └── hal/
+│   │       ├── hal_motor.h
+│   │       ├── hal_buzzer.h
+│   │       ├── hal_comm.h
+│   │       └── hal_eeprom_cfg.h
+│   └── src/
+│       └── hal/
+│           ├── hal_motor.c
+│           ├── hal_buzzer.c
+│           ├── hal_comm.c
+│           └── hal_eeprom_cfg.c
+│
+├── HMI_WS/
+│   ├── main.c
+│   ├── inc/
+│   │   └── hal/
+│   │       ├── hal_lcd.h
+│   │       ├── hal_keypad.h
+│   │       ├── hal_rgb_led.h
+│   │       ├── hal_potentiometer.h
+│   │       └── hal_comm.h
+│   └── src/
+│       └── hal/
+│           ├── hal_lcd.c
+│           ├── hal_keypad.c
+│           ├── hal_rgb_led.c
+│           ├── hal_potentiometer.c
+│           └── hal_comm.c
+│
+└── Smart_Home_WS.eww
 ```
 
-> Replace `https://github.com/<your-user>/<your-repo>.git` with the real URL.
+---
 
-### 3.2 Open in IAR
+# 5️ TivaWare Integration
 
-1. Start **IAR Embedded Workbench**.
-2. `File` → `Open` → `Workspace…`
-3. Open: `Smart_Home_WS.eww`
-4. You will see two projects in the workspace:
+The project uses **TivaWare (driverlib)** as the vendor MCU support library.
 
-   * `Control_WS - Debug`
-   * `HIMI_WS - Debug`
+###  We do *not* copy TivaWare inside the repo.
 
-### 3.3 Build each ECU
+Instead, we configure IAR:
 
-1. Select the project you want as **Active** (right-click → *Set as Active*).
-2. Press **Build** (or `F7`).
-3. Repeat for the other project.
+### **IAR → C/C++ Compiler → Additional Include Directories**
 
-If include paths are correct, both should build without errors.
+```
+C:\ti\TivaWare_C_Series-2.2.0.295\inc
+C:\ti\TivaWare_C_Series-2.2.0.295\driverlib\inc
+```
+
+### **IAR → Linker → Additional Libraries**
+
+```
+C:\ti\TivaWare_C_Series-2.2.0.295\driverlib\ewarm\Exe\driverlib.lib
+```
+
+### 📹 Video Guide for Linking TivaWare to IAR
+
+A full setup video is available here:
+
+ **[https://garraio-my.sharepoint.com/:f:/p/ahmed_hisham/IgA-lh1B90QuSKyxEtv4-_wAAWXkQYjhPH230mF_V04zHV8?e=XyEKHE](https://garraio-my.sharepoint.com/:f:/p/ahmed_hisham/IgA-lh1B90QuSKyxEtv4-_wAAWXkQYjhPH230mF_V04zHV8?e=XyEKHE)**
 
 ---
 
-## 4. Git workflow – how to work safely
+# 6️ Build & Flash Instructions
 
-To avoid conflicts and confusion, we follow this simple workflow:
+###  Build Control ECU
 
-### 4.1 Branches
+1. Right-click → **Set as Active**
+2. Press **F7** to build
+3. Download to board using **Download and Debug**
 
-* `main`
+###  Build HMI ECU
 
-  * Always **stable**, **builds successfully**.
-  * No one commits directly here (ideally protected by GitHub).
-* Feature branches
+Same steps:
 
-  * For example:
+1. Set **HMI_WS – Debug** as active
+2. Build
+3. Flash
 
-    * `feature/control-uart`
-    * `feature/hmi-keypad`
-    * `bugfix/control-timer-overflow`
+---
 
-### 4.2 Before you start working
+# 7️ Git Workflow
 
-Always sync with the remote repo first:
+###  Main Branch
+
+* Must always **compile and run**
+* Should remain stable
+* Avoid committing directly
+
+###  Creating a Feature Branch
 
 ```bash
 git checkout main
 git pull
+git checkout -b feature/<name>
 ```
 
-Then create a feature branch from the updated `main`:
+###  Committing
 
 ```bash
-git checkout -b feature/<short-description>
-```
-
-Examples:
-
-```bash
-git checkout -b feature/hmi-lcd-driver
-git checkout -b feature/control-motor-pwm
-```
-
-Now do your edits in IAR on this branch.
-
-### 4.3 While working
-
-1. Check what changed:
-
-   ```bash
-   git status
-   ```
-
-2. Stage and commit logically (small, focused commits):
-
-   ```bash
-   git add .
-   git commit -m "Implement basic LCD init and clear functions"
-   ```
-
-3. Push your branch to GitHub:
-
-   ```bash
-   git push -u origin feature/hmi-lcd-driver
-   ```
-
-### 4.4 Creating a Pull Request (PR)
-
-1. Go to GitHub.
-2. You will see a suggestion to open a PR from your branch.
-3. Create a PR into `main`.
-4. Another teammate reviews the code, then merges it when:
-
-   * It builds,
-   * It does not break other features.
-
-After merge, you can delete the feature branch.
-
----
-
-## 5. Updating your local repo after others merge
-
-When someone else merges to `main`:
-
-```bash
-# go to main and update
-git checkout main
-git pull
-```
-
-If you are currently on a feature branch and want the latest changes:
-
-```bash
-git checkout main
-git pull
-git checkout feature/your-branch
-git merge main
-# resolve any conflicts (if they exist), then:
 git add .
-git commit -m "Merge main into feature/your-branch"
+git commit -m "implement LCD init and clear"
 ```
 
----
+###  Push to Remote
 
-## 6. Files we track vs ignore
-
-**Tracked (kept in Git):**
-
-* `*.c`, `*.h` files in `Control_WS` and `Himi_WS`
-* Workspace & project files: `Smart_Home_WS.eww`, `*.ewp`
-* Docs: `README.md`, any PDFs or design documents you add
-
-**Ignored (auto-generated, see `.gitignore`):**
-
-* `Debug/` folders
-* `settings/` folders
-* IAR temp/build files: `*.dep`, `*.ewd`, `*.ewt`, `*.pbd`, `*.out`, `*.hex`, `*.map`, `*.o`, etc.
-
----
-
-## 7. Coding / project conventions
-
-* `main.c` stays at the root of each ECU project (`Control_WS/main.c`, `Himi_WS/main.c`).
-* All other modules go under `src/`, headers under `inc/`.
-* Common type & macro headers:
-
-  * `Types.h`
-  * `common_macros.h`
-  * `tm4c123gh6pm.h`
-
-Try to keep modules small and focused (e.g. `motor.c`, `buzzer.c`, `lcd.c`).
-
----
-
-
+```bash
+git push -u origin feature/<name>
 ```
 
+###  Merging via Pull Request
 
-```
+* Create PR from your feature branch
+* Merge after review
+* Delete the branch
+
+
