@@ -336,6 +336,7 @@
                 <option>
                     <name>CCIncludePath2</name>
                     <state>$PROJ_DIR$/inc</state>
+                    <state>..\..\Common\inc</state>
                     <state>C:\ti\TivaWare_C_Series-2.2.0.295\inc</state>
                     <state>C:\ti\TivaWare_C_Series-2.2.0.295\driverlib</state>
                     <state>C:\ti\TivaWare_C_Series-2.2.0.295</state>
