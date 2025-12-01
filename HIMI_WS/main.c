@@ -9,10 +9,6 @@
 #include "driverlib/gpio.h"
 #include "driverlib/systick.h"
 
-void systick_ISR(void)
-{
-    // Your SysTick interrupt code
-}
 
 void PORTF_Handler(void)
 {
