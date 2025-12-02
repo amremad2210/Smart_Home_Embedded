@@ -2118,9 +2118,6 @@
                 <name>$PROJ_DIR$\..\Common\inc\common_macros.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\..\Common\inc\system.h</name>
-            </file>
-            <file>
                 <name>$PROJ_DIR$\..\Common\inc\Types.h</name>
             </file>
         </group>
@@ -2147,9 +2144,6 @@
                     <name>$PROJ_DIR$\..\Common\src\mcal\mcal_uart.c</name>
                 </file>
             </group>
-            <file>
-                <name>$PROJ_DIR$\..\Common\src\system.c</name>
-            </file>
         </group>
     </group>
     <group>
