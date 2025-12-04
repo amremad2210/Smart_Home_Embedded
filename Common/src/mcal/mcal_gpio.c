@@ -29,25 +29,6 @@ static uint32_t prv_getPadType(GPIO_InternalAttachType attach)
     }
 }
 
-/**
- * @brief Map our drive enum to TivaWare strength macros.
- */
-static uint32_t prv_getDriveStrength(GPIO_DriveType drive)
-{
-    switch (drive)
-    {
-        case GPIO_DRIVE_4MA:
-            return GPIO_STRENGTH_4MA;
-
-        case GPIO_DRIVE_8MA:
-            return GPIO_STRENGTH_8MA;
-
-        case GPIO_DRIVE_2MA:
-        default:
-            return GPIO_STRENGTH_2MA;
-    }
-}
-
 /*======================================================================
  *  API implementations
  *====================================================================*/
@@ -67,8 +48,7 @@ void MCAL_GPIO_EnablePort(uint32_t periph)
 void MCAL_GPIO_InitPin(uint32_t portBase,
                        uint8_t  pins,
                        GPIO_DirectionType       dir,
-                       GPIO_InternalAttachType  attach,
-                       GPIO_DriveType           drive)
+                       GPIO_InternalAttachType  attach)
 {
     uint32_t dirMode;
     uint32_t padType;
@@ -87,9 +67,11 @@ void MCAL_GPIO_InitPin(uint32_t portBase,
     /* Configure direction */
     GPIODirModeSet(portBase, pins, dirMode);
 
-    /* Configure pad: drive strength + attach */
+    /* Configure pad: fixed drive strength + attach */
     padType  = prv_getPadType(attach);
-    strength = prv_getDriveStrength(drive);
+
+    /* Choose a global default drive strength for all pins (2mA here) */
+    strength = GPIO_STRENGTH_2MA;
 
     GPIOPadConfigSet(portBase, pins, strength, padType);
 }
@@ -126,6 +108,3 @@ void MCAL_GPIO_TogglePin(uint32_t portBase,
     uint32_t toggled = (~current) & pins;
     GPIOPinWrite(portBase, pins, toggled);
 }
-
-
-

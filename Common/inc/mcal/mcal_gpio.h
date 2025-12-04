@@ -32,13 +32,7 @@ typedef enum
     GPIO_ATTACH_PULLDOWN
 } GPIO_InternalAttachType;
 
-/* Drive strength for output pins (in mA) */
-typedef enum
-{
-    GPIO_DRIVE_2MA = 2,
-    GPIO_DRIVE_4MA = 4,
-    GPIO_DRIVE_8MA = 8
-} GPIO_DriveType;
+
 
 
 
@@ -57,20 +51,18 @@ void MCAL_GPIO_EnablePort(uint32_t periph);
 /**
  * @brief Configure one or more pins on a port.
  *
- * Uses TivaWare driverlib to set direction, internal attachment,
- * and drive strength.
+ * Uses TivaWare driverlib to set direction and internal attachment
  *
  * @param portBase  GPIO_PORTx_BASE (e.g. GPIO_PORTF_BASE)
  * @param pins      Bit mask of pins (e.g. GPIO_PIN_1 | GPIO_PIN_2)
  * @param dir       GPIO_DIR_INPUT or GPIO_DIR_OUTPUT
  * @param attach    GPIO_ATTACH_xxx
- * @param drive     GPIO_DRIVE_xMA (only relevant for outputs)
  */
 void MCAL_GPIO_InitPin(uint32_t portBase,
                        uint8_t  pins,
                        GPIO_DirectionType       dir,
-                       GPIO_InternalAttachType  attach,
-                       GPIO_DriveType           drive);
+                       GPIO_InternalAttachType  attach);
+
 
 /**
  * @brief Write value to one or more output pins.
