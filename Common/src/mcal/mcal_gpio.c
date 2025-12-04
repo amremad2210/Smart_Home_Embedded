@@ -108,3 +108,9 @@ void MCAL_GPIO_TogglePin(uint32_t portBase,
     uint32_t toggled = (~current) & pins;
     GPIOPinWrite(portBase, pins, toggled);
 }
+
+
+void PORTF_Handler(void)
+{
+    // Your GPIOF interrupt code
+}

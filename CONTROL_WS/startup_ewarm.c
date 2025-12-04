@@ -45,6 +45,9 @@ static void FaultISR(void);
 static void IntDefaultHandler(void);
 extern void systick_ISR (void);
 extern void PORTF_Handler(void) ;
+extern void Timer0A_Handler(void);
+extern void WTimer2A_Handler(void);
+
 
 
 //*****************************************************************************
@@ -119,7 +122,7 @@ __root const uVectorEntry __vector_table [] @ ".intvec" =
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-    IntDefaultHandler ,                      // Timer 0 subtimer A
+    Timer0A_Handler,                        // Timer 0 subtimer A
     IntDefaultHandler,                      // Timer 0 subtimer B
     IntDefaultHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
@@ -198,7 +201,7 @@ __root const uVectorEntry __vector_table [] @ ".intvec" =
     IntDefaultHandler,                      // Wide Timer 0 subtimer B
     IntDefaultHandler,                      // Wide Timer 1 subtimer A
     IntDefaultHandler,                      // Wide Timer 1 subtimer B
-    IntDefaultHandler,                      // Wide Timer 2 subtimer A
+    WTimer2A_Handler,                       // Wide Timer 2 subtimer A
     IntDefaultHandler,                      // Wide Timer 2 subtimer B
     IntDefaultHandler,                      // Wide Timer 3 subtimer A
     IntDefaultHandler,                      // Wide Timer 3 subtimer B
