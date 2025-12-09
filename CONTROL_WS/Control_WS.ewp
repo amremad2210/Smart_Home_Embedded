@@ -2157,7 +2157,7 @@
                 <name>$PROJ_DIR$\inc\hal\hal_comm.h</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\inc\hal\hal_eeprom_cgf.h</name>
+                <name>$PROJ_DIR$\inc\hal\hal_eeprom.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\inc\hal\hal_motor.h</name>
@@ -2175,7 +2175,7 @@
                 <name>$PROJ_DIR$\src\hal\hal_comm.c</name>
             </file>
             <file>
-                <name>$PROJ_DIR$\src\hal\hal_eeprom_cfg.c</name>
+                <name>$PROJ_DIR$\src\hal\hal_eeprom.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\src\hal\hal_motor.c</name>
