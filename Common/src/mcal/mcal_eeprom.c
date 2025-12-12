@@ -5,6 +5,7 @@
  *===========================================================================*/
 
 #include "mcal/mcal_eeprom.h"
+#include "mcal/mcal_gpio.h"
 
 /*======================================================================
  *  API implementations
@@ -14,14 +15,9 @@ uint8_t MCAL_EEPROM_Init(void)
 {
     uint32_t result;
     
-    /* Enable the EEPROM peripheral */
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_EEPROM0);
-    
-    /* Wait until the peripheral is ready */
-    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_EEPROM0))
-    {
-        /* spin */
-    }
+   
+    /* Enable EEPROM0 peripheral clock */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_EEPROM0);
     
     /* Initialize the EEPROM module */
     result = EEPROMInit();
