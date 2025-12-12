@@ -10,10 +10,7 @@
 #include "driverlib/systick.h"
 
 
-void PORTF_Handler(void)
-{
-    // Your GPIOF interrupt code
-}
+
 
 
 int main()

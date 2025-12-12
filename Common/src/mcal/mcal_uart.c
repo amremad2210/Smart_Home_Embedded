@@ -97,3 +97,9 @@ uint32_t receiveString(uint32_t uartBase, char *buffer, uint32_t maxLen)
 	return idx;
 }
 
+uint8_t isDataAvailable(uint32_t uartBase)
+{
+	/* Use TivaWare function to check if data is available */
+	return UARTCharsAvail(uartBase) ? 1U : 0U;
+}
+

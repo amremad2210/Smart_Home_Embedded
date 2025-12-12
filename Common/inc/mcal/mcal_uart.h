@@ -60,4 +60,14 @@ void sendString(uint32_t uartBase, const char *str);
  */
 uint32_t receiveString(uint32_t uartBase, char *buffer, uint32_t maxLen);
 
+/**
+ * @brief Check if data is available in UART receive buffer.
+ *
+ * Non-blocking check for available data.
+ * 
+ * @param uartBase Base address of UART module (UART0_BASE, etc.)
+ * @return 1 if data is available, 0 otherwise
+ */
+uint8_t isDataAvailable(uint32_t uartBase);
+
 #endif /* MCAL_UART_H_ */
