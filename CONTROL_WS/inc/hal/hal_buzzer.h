@@ -8,11 +8,11 @@
  *
  *******************************************************************************/
 
-#ifndef BUZZER_H_
-#define BUZZER_H_
+#ifndef HAL_BUZZER_H_
+#define HAL_BUZZER_H_
 
 #include <stdint.h>
-#include "mcal_gpio.h" /* Included to access TivaWare definitions for Port/Pin */
+#include "mcal/mcal_gpio.h" /* Included to access TivaWare definitions for Port/Pin */
 
 /*******************************************************************************
  * Definitions                                  *
@@ -23,7 +23,7 @@
  */
 #define BUZZER_PERIPH       SYSCTL_PERIPH_GPIOF
 #define BUZZER_PORT_BASE    GPIO_PORTF_BASE
-#define BUZZER_PIN          GPIO_PIN_1
+#define BUZZER_PIN          GPIO_PIN_4
 
 /* Buzzer States */
 #define BUZZER_ON   1
@@ -42,4 +42,4 @@ void BUZZER_setState(uint8_t state);
 /* Make a blocking beep (uses SysTick delay) */
 void BUZZER_beep(uint32_t duration_ms);
 
-#endif /* BUZZER_H_ */
+#endif /* HAL_BUZZER_H_ */

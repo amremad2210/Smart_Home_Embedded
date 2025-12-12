@@ -82,6 +82,10 @@ typedef float64*                    pfloat64;
 
 /*------------------------------ Defines -----------------------------*/
 
+
+#define LOGIC_LOW                       0
+#define LOGIC_HIGH                      1
+
 #ifndef TRUE
 #define TRUE                        ((boolean) 1)
 #endif

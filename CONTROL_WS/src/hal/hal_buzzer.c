@@ -8,9 +8,10 @@
  *
  *******************************************************************************/
 
-#include "buzzer.h"
-#include "mcal_gpio.h"    // Use the new MCAL GPIO driver
-#include "mcal_systick.h" // Use the new MCAL SysTick driver for delay
+#include "hal/hal_buzzer.h"
+#include "mcal/mcal_gpio.h"    // Use the new MCAL GPIO driver
+#include "mcal/mcal_systick.h" // Use the new MCAL SysTick driver for dela
+#include "Types.h"
 
 void BUZZER_init(void)
 {
