@@ -1,24 +1,20 @@
 #include "mcal_adc.h"
 #include "tm4c123gh6pm.h"
+#include "mcal/mcal_gpio.h"
 
 // Initializes ADC0 Sequencer 3 for single-ended sampling
 void ADC_Init(uint8_t channel)
 {
-    volatile uint32_t delay;
+    /* Enable ADC0 peripheral via MCAL helper */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_ADC0);
     
-    /* Enable ADC0 clock */
-    SYSCTL_RCGCADC_R |= 0x01;           
-    delay = SYSCTL_RCGCADC_R;           
-    
-    /* Enable GPIO Port E clock */
-    SYSCTL_RCGCGPIO_R |= 0x10;          
-    delay = SYSCTL_RCGCGPIO_R;          
-    
-    /* Configure PE3 as analog input */
-    GPIO_PORTE_DIR_R &= ~0x08;          
-    GPIO_PORTE_AFSEL_R |= 0x08;         
-    GPIO_PORTE_DEN_R &= ~0x08;          
-    GPIO_PORTE_AMSEL_R |= 0x08;         
+    /* Enable GPIO Port E clock via MCAL helper */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOE);
+
+    /* Configure PE3 as analog input using MCAL + driverlib */
+    MCAL_GPIO_InitPin(GPIO_PORTE_BASE, GPIO_PIN_3, GPIO_DIR_INPUT, GPIO_ATTACH_DEFAULT);
+    /* Set pin type to ADC (configures AFSEL/AMSEL appropriately) */
+    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
     
     /* Configure ADC0 */
     ADC0_ACTSS_R &= ~0x08;              
