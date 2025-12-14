@@ -5,8 +5,7 @@
  * Date: [Current Date]
  *****************************************************************************/
 
-#include "hal_keypad.h"
-#include "mcal_gpio.h"    // We'll use MCAL_GPIO functions
+#include "hal/hal_keypad.h"
 #include "driverlib/sysctl.h"  // For SYSCTL_PERIPH_GPIOx
 
 /* 

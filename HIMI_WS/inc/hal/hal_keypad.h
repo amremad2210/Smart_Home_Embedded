@@ -9,7 +9,8 @@
 #define HAL_KEYPAD_H
 
 #include <stdint.h>
-#include "mcal_gpio.h"  // Include MCAL_GPIO header
+#include "mcal/mcal_gpio.h"  // Include MCAL_GPIO header
+#include "Types.h"
 
 /* Keypad dimensions */
 #define KEYPAD_ROWS 4
