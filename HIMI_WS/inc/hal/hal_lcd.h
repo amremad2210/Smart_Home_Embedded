@@ -1,50 +1,46 @@
-/*****************************************************************************
- * File:hal_ lcd.h
- * Description: Header for 16x2 LCD Driver (4-bit mode)
- * Author: Ahmedhh
- * Date: December 4, 2025
- * 
- * Pin Configuration:
- *   RS  -> PB0 (Register Select: 0=Command, 1=Data)
- *   EN  -> PB1 (Enable signal)
- *   D4  -> PB2 (Data bit 4)
- *   D5  -> PB3 (Data bit 5)
- *   D6  -> PB4 (Data bit 6)
- *   D7  -> PB5 (Data bit 7)
- *****************************************************************************/
-
-#ifndef LCD_H
-#define LCD_H
+#ifndef HAL_LCD_I2C_H
+#define HAL_LCD_I2C_H
 
 #include <stdint.h>
 
 /******************************************************************************
- *                              LCD Commands                                   *
+ *                             LCD Commands                                   *
  ******************************************************************************/
 
-#define LCD_CLEAR           0x01    /* Clear display */
-#define LCD_HOME            0x02    /* Return home */
-#define LCD_ENTRY_MODE      0x06    /* Entry mode: increment cursor, no shift */
-#define LCD_DISPLAY_ON      0x0C    /* Display ON, cursor OFF, blink OFF */
-#define LCD_DISPLAY_OFF     0x08    /* Display OFF */
-#define LCD_CURSOR_ON       0x0E    /* Display ON, cursor ON, blink OFF */
-#define LCD_CURSOR_BLINK    0x0F    /* Display ON, cursor ON, blink ON */
-#define LCD_SHIFT_LEFT      0x18    /* Shift display left */
-#define LCD_SHIFT_RIGHT     0x1C    /* Shift display right */
-#define LCD_4BIT_MODE       0x28    /* 4-bit mode, 2 lines, 5x8 font */
-#define LCD_8BIT_MODE       0x38    /* 8-bit mode, 2 lines, 5x8 font */
+/* Clear display */
+#define LCD_CLEAR                0x01
 
-/* Line addresses for 16x2 LCD */
-#define LCD_LINE1           0x80    /* First line address */
-#define LCD_LINE2           0xC0    /* Second line address */
+/* Return home (cursor to 0,0) */
+#define LCD_HOME                 0x02
+
+/* Entry mode: increment cursor, no shift */
+#define LCD_ENTRY_MODE           0x06
+
+/* Display control */
+#define LCD_DISPLAY_ON           0x0C  /* Display ON, cursor OFF, blink OFF */
+#define LCD_DISPLAY_OFF          0x08
+#define LCD_CURSOR_ON            0x0E
+#define LCD_CURSOR_BLINK         0x0F
+
+/* Cursor / display shift */
+#define LCD_SHIFT_LEFT           0x18
+#define LCD_SHIFT_RIGHT          0x1C
+
+/* Function set */
+#define LCD_FUNCTION_4BIT_2LINE  0x28  /* 4-bit mode, 2 lines, 5x8 font */
+#define LCD_FUNCTION_8BIT_2LINE  0x38  /* (not used here) */
+
+/* DDRAM addresses for 16x2 LCD */
+#define LCD_LINE1_ADDR           0x80  /* First line base address */
+#define LCD_LINE2_ADDR           0xC0  /* Second line base address */
 
 /******************************************************************************
- *                          Function Prototypes                                *
+ *                          Function Prototypes                               *
  ******************************************************************************/
 
 /*
  * LCD_Init
- * Initializes the LCD in 4-bit mode.
+ * Initializes the LCD (I2C, 4-bit HD44780 via PCF8574T).
  * Must be called before any other LCD function.
  */
 void LCD_Init(void);
@@ -72,7 +68,7 @@ void LCD_Clear(void);
 /*
  * LCD_SetCursor
  * Sets the cursor position on the LCD.
- * Parameters: 
+ * Parameters:
  *   row - Row number (0 or 1)
  *   col - Column number (0 to 15)
  */
@@ -92,4 +88,4 @@ void LCD_WriteString(const char *str);
  */
 void LCD_WriteChar(char c);
 
-#endif /* LCD_H */
+#endif /* HAL_LCD_I2C_H */
