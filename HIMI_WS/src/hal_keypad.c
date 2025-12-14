@@ -7,6 +7,7 @@
 
 #include "hal/hal_keypad.h"
 #include "driverlib/sysctl.h"  // For SYSCTL_PERIPH_GPIOx
+#include "mcal/mcal_systick.h" // For debounce delays
 
 /* 
  * Keypad mapping array.
@@ -92,8 +93,8 @@ char HAL_Keypad_GetKey(void) {
         /* Set current column LOW (active) */
         MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[col], LOGIC_LOW);
         
-        /* Small delay for signal to settle */
-        for (volatile int d = 0; d < 100; d++);
+        /* Small delay for signal to settle (1ms) */
+        MCAL_SysTick_DelayMs(1);
         
         /* Scan each row for key press */
         for (uint8_t row = 0; row < KEYPAD_ROWS; row++) {
@@ -107,13 +108,16 @@ char HAL_Keypad_GetKey(void) {
              * - Goes LOW (0) when key is pressed (connects to column LOW)
              */
             if (row_state == 0) {  /* Key pressed (active LOW) */
+                /* Debounce delay to confirm key press */
+                MCAL_SysTick_DelayMs(20);
+                
                 /* Wait for key release (debounce) */
                 while (MCAL_GPIO_ReadPin(KEYPAD_ROW_PORT, row_pins[row]) == 0) {
                     /* Wait until key is released */
                 }
                 
-                /* Small debounce delay after release */
-                for (volatile int d = 0; d < 1000; d++);
+                /* Debounce delay after release */
+                MCAL_SysTick_DelayMs(20);
                 
                 /* Return the mapped character */
                 return keypad_codes[row][col];
