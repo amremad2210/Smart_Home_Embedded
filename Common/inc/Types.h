@@ -59,10 +59,10 @@ typedef sint32_t*                   psint32_t;
 typedef sint64_t*                   psint64_t;
 
 /* Unsigned Integer Pointers */
-typedef uint8_t*                    puint8_t;
-typedef uint16_t*                   puint16_t;
-typedef uint32_t*                   puint32_t;
-typedef uint64_t*                   puint64_t;
+//typedef uint8_t*                    puint8_t;
+//typedef uint16_t*                   puint16_t;
+//typedef uint32_t*                   puint32_t;
+//typedef uint64_t*                   puint64_t;
 
 /* Volatile Signed Integer Pointers */
 typedef vsint8_t*                   pvsint8_t;

@@ -76,7 +76,7 @@ void MCAL_Pwm_SetDuty(Pwm_ChannelType channel_ID, uint8_t dutyCycle)
     {
         case PWM_CHANNEL_PB6:
             /* PB6 is M0PWM0 (Output 0) */
-            PWMPulseWidthSet(PWM0_BASE, PWM_OUTPUT_0, width);
+            PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, width);
             break;
         default:
             break;

@@ -7,6 +7,8 @@
 
 #include "Types.h"
 #include <stdint.h>
+#include <stdbool.h>
+
 
 /* ===========================
  *   Types
