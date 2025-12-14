@@ -9,6 +9,10 @@
 #include "mcal/mcal_gpio.h"
 #include "mcal/mcal_gpt.h"
 #include "hal/hal_eeprom.h"
+
+#include "hal/hal_motor.h"
+#include "hal/hal_buzzer.h"
+#include "mcal/mcal_systick.h" // for delays (waiting for door to open)
 #include "Types.h"
 
 
@@ -67,17 +71,68 @@ int main()
     uint8_t attemptLength = 4U;
     
     // Verify the attempted password
+//    if (HAL_EEPROM_VerifyPassword(attemptedPassword, attemptLength))
+//    {
+//      // ✓ Password is CORRECT!
+//      activeLedPin = GREEN_LED_PIN;  // Set to blink GREEN
+//    }
+//    else
+//    {
+//      // ✗ Password is WRONG!
+//      activeLedPin = RED_LED_PIN;  // Set to blink RED
+//    }
+//  }
     if (HAL_EEPROM_VerifyPassword(attemptedPassword, attemptLength))
     {
       // ✓ Password is CORRECT!
-      activeLedPin = GREEN_LED_PIN;  // Set to blink GREEN
+      activeLedPin = GREEN_LED_PIN;
+
+      // --- ADD THIS BLOCK ---
+
+      // 1. Visual/Audio Feedback
+      BUZZER_beep(100); // Short beep for success
+
+      // 2. UNLOCK DOOR (Retract Bolt)
+      // Move Forward at 100% speed
+      HAL_Motor_Move(MOTOR_FORWARD, 100);
+
+      // 3. Wait for the mechanism to move
+      // Adjust this time based on how long your lock takes to open!
+      MCAL_SysTick_DelayMs(2000); // Wait 2 seconds
+
+      // 4. STOP MOTOR (Important: Don't keep pushing against the wall)
+      HAL_Motor_Move(MOTOR_STOP, 0);
+
+      // 5. Keep door open for a while (e.g., 5 seconds to let user enter)
+      MCAL_SysTick_DelayMs(5000);
+
+      // 6. LOCK DOOR (Extend Bolt)
+      // Move Backward at 100% speed
+      HAL_Motor_Move(MOTOR_BACKWARD, 100);
+
+      // 7. Wait for mechanism to close
+      MCAL_SysTick_DelayMs(2000);
+
+      // 8. Final Stop
+      HAL_Motor_Move(MOTOR_STOP, 0);
+
+      // ----------------------
     }
     else
     {
       // ✗ Password is WRONG!
-      activeLedPin = RED_LED_PIN;  // Set to blink RED
+      activeLedPin = RED_LED_PIN;
+
+      // --- ADD THIS BLOCK ---
+
+      // Long angry beep
+      BUZZER_beep(1000);
+
+      // Ensure motor is locked/stopped
+      HAL_Motor_Move(MOTOR_STOP, 0);
+
+      // ----------------------
     }
-  }
   
   /* ========================================
    * GPIO and LED Setup
@@ -89,6 +144,18 @@ int main()
   MCAL_GPIO_InitPin(LED_PORT_BASE, GREEN_LED_PIN | RED_LED_PIN, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
   MCAL_GPIO_WritePin(LED_PORT_BASE, GREEN_LED_PIN, 0U);
   MCAL_GPIO_WritePin(LED_PORT_BASE, RED_LED_PIN, 0U);
+
+
+  /* ========================================
+   * Motor Setup
+   * ======================================== */
+
+  /* Initialize Motor */
+  HAL_Motor_Init();
+
+  /* Test: Move Forward at 60% speed */
+//  HAL_Motor_Move(MOTOR_FORWARD, 60);
+
   
   
   /* ========================================
@@ -111,7 +178,10 @@ int main()
   Gpt_Init(&t0Cfg);
   Gpt_SetCallBack(Timer0A_BlinkCallback, GPT_TIMER0A);
   Gpt_Start(GPT_TIMER0A);
-  
+
+  /* Initialize Drivers */
+  HAL_Motor_Init();
+  BUZZER_init();
   
   while(1){
   
