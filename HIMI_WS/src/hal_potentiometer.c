@@ -1,4 +1,4 @@
-#include "hal_potentiometer.h"
+#include "hal/hal_potentiometer.h"
 #include "mcal/mcal_adc.h"
 
 // Initializes the potentiometer (ADC on PE3)

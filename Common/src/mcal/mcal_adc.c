@@ -1,5 +1,4 @@
-#include "mcal_adc.h"
-#include "tm4c123gh6pm.h"
+#include "mcal/mcal_adc.h"
 #include "mcal/mcal_gpio.h"
 
 // Initializes ADC0 Sequencer 3 for single-ended sampling
