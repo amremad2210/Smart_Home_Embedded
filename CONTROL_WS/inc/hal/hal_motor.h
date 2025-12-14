@@ -5,6 +5,13 @@
 #include "Types.h"
 #include <stdint.h>
 
+
+#define MOTOR_GPIO_PERIPH   SYSCTL_PERIPH_GPIOB
+#define MOTOR_PORT_BASE     GPIO_PORTB_BASE
+#define MOTOR_PIN_IN1       (1U << 4) // PB4
+#define MOTOR_PIN_IN2       (1U << 5) // PB5
+
+
 /* Motor Direction Logic */
 typedef enum {
     MOTOR_STOP,

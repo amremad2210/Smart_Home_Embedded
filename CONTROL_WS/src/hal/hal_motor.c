@@ -11,10 +11,6 @@
  * IN1: PB4
  * IN2: PB5
  */
-#define MOTOR_GPIO_PERIPH   SYSCTL_PERIPH_GPIOB
-#define MOTOR_PORT_BASE     GPIO_PORTB_BASE
-#define MOTOR_PIN_IN1       (1U << 4) // PB4
-#define MOTOR_PIN_IN2       (1U << 5) // PB5
 
 void HAL_Motor_Init(void)
 {

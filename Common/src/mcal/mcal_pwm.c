@@ -10,6 +10,7 @@
 #include "driverlib/gpio.h"
 #include "driverlib/pwm.h"
 #include "driverlib/pin_map.h"
+#include "mcal/mcal_gpio.h"
 
 /* Helper to store the Period Load value for duty cycle calculations */
 static uint32_t g_pwmLoadValue = 0;
@@ -27,12 +28,9 @@ void MCAL_Pwm_Init(const Pwm_ConfigType *Config_Ptr)
         case PWM_CHANNEL_PB6:
         {
             /* Enable Peripherals */
-            SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
-            SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 
-            /* Wait for ready */
-            while(!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM0)) {}
-            while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOB)) {}
+            MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOB);
+            MCAL_GPIO_EnablePort(SYSCTL_PERIPH_PWM0);
 
             /* Configure Pin Muxing for PB6 as M0PWM0 */
             GPIOPinConfigure(GPIO_PB6_M0PWM0);
