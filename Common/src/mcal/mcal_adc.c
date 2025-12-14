@@ -11,9 +11,7 @@ void ADC_Init(uint8_t channel)
     /* Enable GPIO Port E clock via MCAL helper */
     MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOE);
 
-    /* Configure PE3 as analog input using MCAL + driverlib */
-    MCAL_GPIO_InitPin(GPIO_PORTE_BASE, GPIO_PIN_3, GPIO_DIR_INPUT, GPIO_ATTACH_DEFAULT);
-    /* Set pin type to ADC (configures AFSEL/AMSEL appropriately) */
+    /* Configure PE3 as analog input for ADC */
     GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_3);
     
     /* Configure ADC0 */
