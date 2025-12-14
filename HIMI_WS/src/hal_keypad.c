@@ -65,7 +65,7 @@ void HAL_Keypad_Init(void) {
                          GPIO_DIR_OUTPUT, 
                          GPIO_ATTACH_DEFAULT);
         /* Set column HIGH (inactive) */
-        MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[i], 1);
+        MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[i], LOGIC_HIGH);
     }
 }
 
@@ -87,11 +87,11 @@ char HAL_Keypad_GetKey(void) {
     for (uint8_t col = 0; col < KEYPAD_COLS; col++) {
         /* Set all columns HIGH (inactive) */
         for (uint8_t c = 0; c < KEYPAD_COLS; c++) {
-            MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[c], 1);
+            MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[c], LOGIC_HIGH);
         }
         
         /* Set current column LOW (active) */
-        MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[col], 0);
+        MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[col], LOGIC_LOW);
         
         /* Small delay for signal to settle */
         for (volatile int d = 0; d < 100; d++);
