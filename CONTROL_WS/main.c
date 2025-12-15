@@ -11,6 +11,7 @@
 #include "hal/hal_eeprom.h"
 #include "hal/hal_motor.h"   // Motor Driver
 #include "hal/hal_buzzer.h"  // Buzzer Driver
+#include "hal/hal_keypad.h"  // Keypad Driver
 #include "Types.h"
 
 
@@ -18,6 +19,7 @@
 #define LED_PORT_BASE           GPIO_PORTF_BASE
 #define GREEN_LED_PIN           (1U << 3)  // PF3
 #define RED_LED_PIN             (1U << 1)  // PF1
+#define BLUE_LED_PIN            (1U << 2)  // PF2
 
 static uint8_t activeLedPin = 0U;
 
@@ -46,13 +48,17 @@ int main()
   // 2. Initialize Buzzer
   BUZZER_init();
   
-  // 3. Initialize LEDs
+  // 3. Initialize LEDs (including Blue)
   MCAL_GPIO_EnablePort(LED_GPIO_PERIPH);
-  MCAL_GPIO_InitPin(LED_PORT_BASE, GREEN_LED_PIN | RED_LED_PIN, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
+  MCAL_GPIO_InitPin(LED_PORT_BASE, GREEN_LED_PIN | RED_LED_PIN | BLUE_LED_PIN, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
   MCAL_GPIO_WritePin(LED_PORT_BASE, GREEN_LED_PIN, 0U);
   MCAL_GPIO_WritePin(LED_PORT_BASE, RED_LED_PIN, 0U);
+  MCAL_GPIO_WritePin(LED_PORT_BASE, BLUE_LED_PIN, 0U);
+  
+  // 4. Initialize Keypad
+  HAL_Keypad_Init();
 
-  // 4. Initialize EEPROM
+  // 5. Initialize EEPROM
   uint8_t result = HAL_EEPROM_Init();
 
   /* ========================================

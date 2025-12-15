@@ -37,10 +37,10 @@
 #define KEYPAD_ALL_ROW_PINS (KEYPAD_ROW1_PIN | KEYPAD_ROW2_PIN | KEYPAD_ROW3_PIN | KEYPAD_ROW4_PIN)
 
 /* Keypad mapping array declaration */
-extern const char keypad_codes[KEYPAD_ROWS][KEYPAD_COLS];
+extern const uint8_t keypad_codes[KEYPAD_ROWS][KEYPAD_COLS];
 
 /* Function Prototypes */
 void HAL_Keypad_Init(void);
-char HAL_Keypad_GetKey(void);
+uint8_t HAL_Keypad_GetKey(void);
 
 #endif /* HAL_KEYPAD_H */
