@@ -2108,6 +2108,9 @@
                     <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_gpt.h</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_i2c.h</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_systick.h</name>
                 </file>
                 <file>
@@ -2136,6 +2139,9 @@
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\Common\src\mcal\mcal_gpt.c</name>
+                </file>
+                <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_i2c.c</name>
                 </file>
                 <file>
                     <name>$PROJ_DIR$\..\Common\src\mcal\mcal_systick.c</name>
