@@ -32,16 +32,16 @@ uint8_t HAL_COMM_Init(void)
     MCAL_GPIO_EnablePort(HAL_COMM_GPIO_PERIPH);
     
     /* 2. Configure GPIO pins for UART functionality */
-    /* PA0: U0RX (UART0 Receive) */
-    /* PA1: U0TX (UART0 Transmit) */
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
+    /* PB0: U1RX (UART1 Receive) */
+    /* PB1: U1TX (UART1 Transmit) */
+    GPIOPinConfigure(GPIO_PB0_U1RX);
+    GPIOPinConfigure(GPIO_PB1_U1TX);
     
     /* Set pin type to UART */
     GPIOPinTypeUART(HAL_COMM_GPIO_PORT, HAL_COMM_RX_PIN | HAL_COMM_TX_PIN);
     
     /* 3. Configure UART parameters using MCAL layer */
-    uartConfig.clockFreq = HAL_COMM_SYSTEM_CLOCK;
+    uartConfig.clockFreq = SysCtlClockGet();
     uartConfig.uartBase  = HAL_COMM_UART_MODULE;
     uartConfig.baudRate  = HAL_COMM_BAUD_RATE;
     uartConfig.dataBits  = 8U;
@@ -96,8 +96,8 @@ boolean HAL_COMM_IsDataAvailable(void)
 {
     if (isInitialized)
     {
-        /* Use TivaWare function to check if characters are available */
-        return UARTCharsAvail(HAL_COMM_UART_MODULE) ? TRUE : FALSE;
+        /* Use MCAL function to check if characters are available */
+        return isDataAvailable(HAL_COMM_UART_MODULE) ? TRUE : FALSE;
     }
     
     return FALSE;

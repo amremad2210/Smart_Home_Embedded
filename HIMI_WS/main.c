@@ -1,128 +1,83 @@
-/*****************************************************************************
- * File: main.c
- * Description: Main application - Keypad to LCD display
- * Author: Ahmedhh
- * Date: December 4, 2025
- * 
- * This program reads keypresses from a 4x4 keypad and displays them on
- * a 16x2 LCD in 4-bit mode.
- *****************************************************************************/
-
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "tm4c123gh6pm.h"
-#include "hal/hal_lcd.h"
-
-
-#include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
 
-#include "mcal/mcal_gpio.h"
-#include "mcal/mcal_gpt.h"
-#include "mcal/mcal_systick.h" 
+#include "Types.h"
+#include "mcal/mcal_systick.h"
+
+#include "hal/hal_lcd.h"
+#include "hal/hal_comm.h"
+
+#define RX_BUFFER_SIZE  64U
 
 int main(void)
 {
-    uint8_t counter = 0;
+    char rxBuffer[RX_BUFFER_SIZE];
+    uint8_t rxIndex = 0;
     
     /* Set system clock to 16 MHz */
-    //SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+   // SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
     
     /* Initialize SysTick for delays */
     MCAL_SysTick_Init();
     
-    /* Initialize the LCD (initializes I2C as well) */
+    /* Initialize LCD */
     Lcd_Init();
     
-    /* Test 1: Display welcome message */
-    Lcd_Clear();
-    Lcd_GoToRowColumn(0, 0);  // Row 0, Column 0
-    Lcd_DisplayString("LCD Test v1.0");
-    Lcd_GoToRowColumn(1, 0);  // Row 1, Column 0
-    Lcd_DisplayString("I2C Working!");
-    MCAL_SysTick_DelayMs(3000);
-
+    /* Initialize UART1 for communication with Control ECU */
+    HAL_COMM_Init();
     
-    /* Test 2: Character-by-character display */
+    /* Display welcome message */
     Lcd_Clear();
     Lcd_GoToRowColumn(0, 0);
-    Lcd_DisplayString("Char Test:");
+    Lcd_DisplayString("HIMI Ready");
     Lcd_GoToRowColumn(1, 0);
+    Lcd_DisplayString("Waiting...");
     
-    char test_chars[] = "ABCDEFGHIJ123456";
-    for(uint8_t i = 0; i < 16; i++)
-    {
-        Lcd_DisplayCharacter(test_chars[i]);
-        MCAL_SysTick_DelayMs(200);
-    }
-    MCAL_SysTick_DelayMs(2000);
-    
-    /* Test 3: Position testing - All corners */
-    Lcd_Clear();
-    Lcd_GoToRowColumn(0, 0);  // Top-left
-    Lcd_DisplayCharacter('1');
-    
-    Lcd_GoToRowColumn(0, 15); // Top-right
-    Lcd_DisplayCharacter('2');
-    
-    Lcd_GoToRowColumn(1, 0);  // Bottom-left
-    Lcd_DisplayCharacter('3');
-    
-    Lcd_GoToRowColumn(1, 15); // Bottom-right
-    Lcd_DisplayCharacter('4');
-    
-    Lcd_GoToRowColumn(0, 5);
-    Lcd_DisplayString("POS");
-    
-    Lcd_GoToRowColumn(1, 6);
-    Lcd_DisplayString("TEST");
-    MCAL_SysTick_DelayMs(3000);
-    
-    /* Test 4: Scrolling text simulation */
-    Lcd_Clear();
-    Lcd_GoToRowColumn(0, 0);
-    Lcd_DisplayString("Scrolling...");
     MCAL_SysTick_DelayMs(1000);
     
-    char *long_msg = "Hello Embedded Systems!";
-    for(uint8_t offset = 0; offset < 8; offset++)
+    /* Main loop: continuously receive and display messages */
+    while (1)
     {
-        Lcd_GoToRowColumn(1, 0);
-        Lcd_DisplayString("                "); // Clear line
-        Lcd_GoToRowColumn(1, 0);
-        
-        for(uint8_t i = 0; i < 16 && (offset + i) < 23; i++)
+        /* Check if data is available from UART1 */
+        if (HAL_COMM_IsDataAvailable())
         {
-            Lcd_DisplayCharacter(long_msg[offset + i]);
+            char c = HAL_COMM_ReceiveByte();
+            
+            /* If newline or carriage return, display the message */
+            if (c == '\n' || c == '\r')
+            {
+                if (rxIndex > 0)
+                {
+                    rxBuffer[rxIndex] = '\0';  // Null terminate
+                    
+                    /* Display received message on LCD */
+                    Lcd_Clear();
+                    Lcd_GoToRowColumn(0, 0);
+                    Lcd_DisplayString("Received:");
+                    Lcd_GoToRowColumn(1, 0);
+                    
+                    /* Display up to 16 chars on second line */
+                    for (uint8_t i = 0; i < rxIndex && i < 16; i++)
+                    {
+                        Lcd_DisplayCharacter(rxBuffer[i]);
+                    }
+                    
+                    /* Reset buffer for next message */
+                    rxIndex = 0;
+                }
+            }
+            /* Regular character - add to buffer */
+            else if (rxIndex < (RX_BUFFER_SIZE - 1))
+            {
+                rxBuffer[rxIndex++] = c;
+            }
         }
-        MCAL_SysTick_DelayMs(500);
-    }
-    MCAL_SysTick_DelayMs(2000);
-    
-    /* Test 5: Counter display */
-    Lcd_Clear();
-    Lcd_GoToRowColumn(0, 0);
-    Lcd_DisplayString("Counter Test:");
-    
-    counter = 0;
-    while(1)
-    {
-        Lcd_GoToRowColumn(1, 0);
-        Lcd_DisplayString("Count: ");
-        
-        /* Display counter value */
-        uint8_t hundreds = counter / 100;
-        uint8_t tens = (counter / 10) % 10;
-        uint8_t ones = counter % 10;
-        
-        Lcd_DisplayCharacter('0' + hundreds);
-        Lcd_DisplayCharacter('0' + tens);
-        Lcd_DisplayCharacter('0' + ones);
-        
-        counter++;
-        if(counter > 255) counter = 0;
-        
-        MCAL_SysTick_DelayMs(500);
+        else
+        {
+            /* Only delay when no data is available to prevent busy-wait */
+            MCAL_SysTick_DelayMs(1);
+        }
     }
 }

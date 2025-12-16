@@ -96,8 +96,8 @@ boolean HAL_COMM_IsDataAvailable(void)
 {
     if (isInitialized)
     {
-        /* Use TivaWare function to check if characters are available */
-        return UARTCharsAvail(HAL_COMM_UART_MODULE) ? TRUE : FALSE;
+        /* Use MCAL function to check if characters are available */
+        return isDataAvailable(HAL_COMM_UART_MODULE) ? TRUE : FALSE;
     }
     
     return FALSE;
