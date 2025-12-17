@@ -120,7 +120,7 @@ int main(void)
     
     /* Initialize EEPROM */
     eepromResult = HAL_EEPROM_Init();
-    HAL_EEPROM_ClearPassword();  /* For testing: clear existing password */
+    
     if (eepromResult != HAL_EEPROM_SUCCESS)
     {
         /* EEPROM initialization failed - indicate error with red LED */
@@ -142,6 +142,8 @@ int main(void)
     
     /* Send ready signal to HMI */
     HAL_COMM_SendByte(CMD_READY);
+    
+    HAL_EEPROM_ClearPassword();  /* For testing: clear existing password */
     
     /* Main application loop */
     while(1)
