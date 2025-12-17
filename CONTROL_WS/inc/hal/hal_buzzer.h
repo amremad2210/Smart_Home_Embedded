@@ -22,7 +22,7 @@
  * NOTE: You need both the Peripheral ID (for clock) and Port Base (for IO)
  */
 #define BUZZER_PERIPH       SYSCTL_PERIPH_GPIOF
-#define BUZZER_PORT_BASE    GPIO_PORTF_BASE
+#define BUZZER_PORT_BASE    GPIO_PORTE_BASE
 #define BUZZER_PIN          GPIO_PIN_4
 
 /* Buzzer States */
