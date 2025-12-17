@@ -26,6 +26,30 @@ uint8_t POT_ReadPercentage(void)
     return (uint8_t)((rawValue * 100UL) / 4095UL);
 }
 
+/* Read and average multiple samples to reduce noise */
+uint16_t POT_ReadRawAveraged(uint8_t numSamples)
+{
+    uint32_t sum = 0;
+    uint8_t i;
+    
+    if (numSamples == 0) numSamples = 1;
+    
+    for (i = 0; i < numSamples; i++)
+    {
+        sum += ADC_Read();
+    }
+    
+    return (uint16_t)(sum / numSamples);
+}
+
+/* Read percentage with averaging */
+uint8_t POT_ReadPercentageAveraged(uint8_t numSamples)
+{
+    uint16_t rawValue = POT_ReadRawAveraged(numSamples);
+    /* Convert to percentage: (rawValue * 100) / 4095 */
+    return (uint8_t)((rawValue * 100UL) / 4095UL);
+}
+
 // Maps the potentiometer reading to a custom range
 uint32_t POT_ReadMapped(uint32_t min, uint32_t max)
 {

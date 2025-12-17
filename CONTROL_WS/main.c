@@ -64,8 +64,9 @@
 #define RESP_READY              'R'  /* Ready for command */
 
 /* Password Configuration */
-#define PASSWORD_LENGTH         (5U)  /* 5-digit password */
-#define MAX_PASSWORD_ATTEMPTS   (3U)  /* Maximum wrong attempts before lockout */
+#define PASSWORD_MAX_LENGTH     (16U)  /* Maximum password length (matches HAL_EEPROM) */
+#define PASSWORD_MIN_LENGTH     (4U)   /* Minimum password length (matches HAL_EEPROM) */
+#define MAX_PASSWORD_ATTEMPTS   (3U)   /* Maximum wrong attempts before lockout */
 #define LOCKOUT_BUZZER_DURATION (10000U)  /* 10 seconds buzzer on lockout */
 
 /* Timeout Configuration */
@@ -99,7 +100,6 @@ static void HandlePasswordSetup(void);
 static void HandleOpenDoor(void);
 static void HandleChangePassword(void);
 static void HandleSetTimeout(void);
-static boolean VerifyPasswordWithLockout(void);
 static void ActivateLockout(void);
 static void OpenDoorSequence(uint32_t timeoutSeconds);
 
@@ -208,7 +208,7 @@ int main(void)
         MCAL_SysTick_DelayMs(10U);
     }
     
-    return 0;
+    //return 0;
 }
 
 /*======================================================================
@@ -346,29 +346,71 @@ static uint8_t EEPROM_StoreTimeout(uint32_t timeout)
  */
 static void HandlePasswordSetup(void)
 {
-    char password1[PASSWORD_LENGTH + 1U];
-    char password2[PASSWORD_LENGTH + 1U];
+    char password1[PASSWORD_MAX_LENGTH + 1U];
+    char password2[PASSWORD_MAX_LENGTH + 1U];
     boolean passwordsMatch;
     uint8_t result;
+    uint8_t len1, len2;
     uint8_t i;
     
-    /* Receive first password (exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Receive first password length */
+    len1 = HAL_COMM_ReceiveByte();
+    
+    /* If length is 0, this is a query - check if password is already set */
+    if (len1 == 0U)
+    {
+        if (HAL_EEPROM_IsPasswordSet())
+        {
+            HAL_COMM_SendByte(RESP_FAILURE);  /* Password already set */
+        }
+        else
+        {
+            HAL_COMM_SendByte(RESP_SUCCESS);  /* No password, need setup */
+        }
+        return;
+    }
+    
+    /* Validate first password length */
+    if (len1 < PASSWORD_MIN_LENGTH || len1 > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive first password (variable length) */
+    for (i = 0U; i < len1; i++)
     {
         password1[i] = (char)HAL_COMM_ReceiveByte();
     }
-    password1[PASSWORD_LENGTH] = '\0';
+    password1[len1] = '\0';
     
-    /* Receive second password (confirmation, exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Receive second password length */
+    len2 = HAL_COMM_ReceiveByte();
+    
+    /* Validate second password length */
+    if (len2 < PASSWORD_MIN_LENGTH || len2 > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive second password (confirmation, variable length) */
+    for (i = 0U; i < len2; i++)
     {
         password2[i] = (char)HAL_COMM_ReceiveByte();
     }
-    password2[PASSWORD_LENGTH] = '\0';
+    password2[len2] = '\0';
+    
+    /* Check if lengths match first */
+    if (len1 != len2)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
     
     /* Compare passwords */
     passwordsMatch = TRUE;
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    for (i = 0U; i < len1; i++)
     {
         if (password1[i] != password2[i])
         {
@@ -380,7 +422,7 @@ static void HandlePasswordSetup(void)
     if (passwordsMatch)
     {
         /* Store password to EEPROM */
-        result = HAL_EEPROM_StorePassword(password1, PASSWORD_LENGTH);
+        result = HAL_EEPROM_StorePassword(password1, len1);
         if (result == HAL_EEPROM_SUCCESS)
         {
             HAL_COMM_SendByte(RESP_SUCCESS);
@@ -410,19 +452,30 @@ static void HandlePasswordSetup(void)
  */
 static void HandleOpenDoor(void)
 {
-    char receivedPassword[PASSWORD_LENGTH + 1U];
+    char receivedPassword[PASSWORD_MAX_LENGTH + 1U];
     boolean isCorrect;
+    uint8_t pwdLen;
     uint8_t i;
     
-    /* Receive password from HMI (exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Receive password length */
+    pwdLen = HAL_COMM_ReceiveByte();
+    
+    /* Validate length */
+    if (pwdLen > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive password from HMI (variable length) */
+    for (i = 0U; i < pwdLen; i++)
     {
         receivedPassword[i] = (char)HAL_COMM_ReceiveByte();
     }
-    receivedPassword[PASSWORD_LENGTH] = '\0';
+    receivedPassword[pwdLen] = '\0';
     
     /* Verify password */
-    isCorrect = HAL_EEPROM_VerifyPassword(receivedPassword, PASSWORD_LENGTH);
+    isCorrect = HAL_EEPROM_VerifyPassword(receivedPassword, pwdLen);
     
     if (isCorrect)
     {
@@ -457,22 +510,33 @@ static void HandleOpenDoor(void)
  */
 static void HandleChangePassword(void)
 {
-    char oldPassword[PASSWORD_LENGTH + 1U];
-    char newPassword1[PASSWORD_LENGTH + 1U];
-    char newPassword2[PASSWORD_LENGTH + 1U];
+    char oldPassword[PASSWORD_MAX_LENGTH + 1U];
+    char newPassword1[PASSWORD_MAX_LENGTH + 1U];
+    char newPassword2[PASSWORD_MAX_LENGTH + 1U];
     boolean passwordsMatch;
     uint8_t result;
+    uint8_t oldLen, newLen1, newLen2;
     uint8_t i;
     
-    /* Receive old password (exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Receive old password length */
+    oldLen = HAL_COMM_ReceiveByte();
+    
+    /* Validate length */
+    if (oldLen > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive old password (variable length) */
+    for (i = 0U; i < oldLen; i++)
     {
         oldPassword[i] = (char)HAL_COMM_ReceiveByte();
     }
-    oldPassword[PASSWORD_LENGTH] = '\0';
+    oldPassword[oldLen] = '\0';
     
     /* Verify old password */
-    if (!HAL_EEPROM_VerifyPassword(oldPassword, PASSWORD_LENGTH))
+    if (!HAL_EEPROM_VerifyPassword(oldPassword, oldLen))
     {
         HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();
@@ -484,23 +548,50 @@ static void HandleChangePassword(void)
         return;
     }
     
-    /* Old password correct - receive new password (exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Old password correct - receive new password length */
+    newLen1 = HAL_COMM_ReceiveByte();
+    
+    /* Validate new password length */
+    if (newLen1 < PASSWORD_MIN_LENGTH || newLen1 > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive new password (variable length) */
+    for (i = 0U; i < newLen1; i++)
     {
         newPassword1[i] = (char)HAL_COMM_ReceiveByte();
     }
-    newPassword1[PASSWORD_LENGTH] = '\0';
+    newPassword1[newLen1] = '\0';
     
-    /* Receive confirmation (exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Receive confirmation length */
+    newLen2 = HAL_COMM_ReceiveByte();
+    
+    /* Validate confirmation length */
+    if (newLen2 < PASSWORD_MIN_LENGTH || newLen2 > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive confirmation (variable length) */
+    for (i = 0U; i < newLen2; i++)
     {
         newPassword2[i] = (char)HAL_COMM_ReceiveByte();
     }
-    newPassword2[PASSWORD_LENGTH] = '\0';
+    newPassword2[newLen2] = '\0';
+    
+    /* Check if lengths match first */
+    if (newLen1 != newLen2)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
     
     /* Compare new passwords */
     passwordsMatch = TRUE;
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    for (i = 0U; i < newLen1; i++)
     {
         if (newPassword1[i] != newPassword2[i])
         {
@@ -512,8 +603,8 @@ static void HandleChangePassword(void)
     if (passwordsMatch)
     {
         /* Store new password */
-        result = HAL_EEPROM_ChangePassword(oldPassword, PASSWORD_LENGTH,
-                                           newPassword1, PASSWORD_LENGTH);
+        result = HAL_EEPROM_ChangePassword(oldPassword, oldLen,
+                                           newPassword1, newLen1);
         if (result == HAL_EEPROM_SUCCESS)
         {
             HAL_COMM_SendByte(RESP_SUCCESS);
@@ -542,7 +633,7 @@ static void HandleChangePassword(void)
  */
 static void HandleSetTimeout(void)
 {
-    char password[PASSWORD_LENGTH + 1U];
+    char password[PASSWORD_MAX_LENGTH + 1U];
     uint8_t timeoutValue;
     uint8_t result;
     uint8_t i;
@@ -557,15 +648,25 @@ static void HandleSetTimeout(void)
         return;
     }
     
-    /* Receive password for verification (exactly 5 bytes) */
-    for (i = 0U; i < PASSWORD_LENGTH; i++)
+    /* Receive password length */
+    uint8_t pwdLen = HAL_COMM_ReceiveByte();
+    
+    /* Validate length */
+    if (pwdLen > PASSWORD_MAX_LENGTH)
+    {
+        HAL_COMM_SendByte(RESP_FAILURE);
+        return;
+    }
+    
+    /* Receive password for verification (variable length) */
+    for (i = 0U; i < pwdLen; i++)
     {
         password[i] = (char)HAL_COMM_ReceiveByte();
     }
-    password[PASSWORD_LENGTH] = '\0';
+    password[pwdLen] = '\0';
     
     /* Verify password */
-    if (!HAL_EEPROM_VerifyPassword(password, PASSWORD_LENGTH))
+    if (!HAL_EEPROM_VerifyPassword(password, pwdLen))
     {
         HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();

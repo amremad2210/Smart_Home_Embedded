@@ -59,7 +59,7 @@ void Lcd_DisplayCharacter(uint8_t data)
     Lcd_WriteI2C(data, 0x01); // RS = 1
 }
 
-void Lcd_DisplayString(char *Str)
+void Lcd_DisplayString(const char *Str)
 {
     uint8_t i = 0;
     while(Str[i] != '\0') {

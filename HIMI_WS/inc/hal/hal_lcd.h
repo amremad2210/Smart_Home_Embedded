@@ -42,7 +42,7 @@ void Lcd_SendCommand(uint8_t command);
 void Lcd_DisplayCharacter(uint8_t data);
 
 /* Display a full string (e.g., "Door Locked") */
-void Lcd_DisplayString(char *Str);
+void Lcd_DisplayString(const char *Str);
 
 /* Move cursor to specific position (Row: 0-1, Col: 0-15) */
 void Lcd_GoToRowColumn(uint8_t row, uint8_t col);
