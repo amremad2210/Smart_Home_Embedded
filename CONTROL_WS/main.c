@@ -1,756 +1,312 @@
-/*============================================================================
- *  Module      : Control ECU Main Application
- *  File Name   : main.c
- *  Description : Door Locker Security System - Control ECU Application
+/*
+ * control_ecu.c (TM4C123 Version)
  *
- *  Communication Protocol (UART):
- *  ------------------------------
- *  Commands from HMI_ECU to Control_ECU:
- *    'S' - Setup Password: Receive 2 passwords (5 digits each), store if match
- *    'O' - Open Door: Receive password (5 digits), verify and open door
- *    'C' - Change Password: Receive old password, then 2 new passwords
- *    'T' - Set Timeout: Receive timeout value (1 byte integer, 5-30), then password
- *
- *  Responses from Control_ECU to HMI_ECU:
- *    'R' - Ready: System initialized and ready
- *    'Y' - Success: Operation completed successfully
- *    'N' - Failure: Operation failed (wrong password, etc.)
- *    'L' - Lockout: System locked out (3 wrong attempts)
- *
- *  Data Format:
- *    - Passwords: 5 bytes (ASCII digits, sent as individual bytes)
- *    - Timeout: 1 byte (integer value, 5-30)
- *===========================================================================*/
+ *  Created on: December 17, 2024
+ *      Author: amrem
+ *  Description: Control ECU for Smart Door Lock System using TM4C123GH6PM
+ */
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-
-#include "inc/hw_memmap.h"
-#include "driverlib/sysctl.h"
-
+#include "common_macros.h"
+#include "Types.h"
 #include "mcal/mcal_gpio.h"
 #include "mcal/mcal_systick.h"
-#include "mcal/mcal_eeprom.h"
-
+#include "mcal/mcal_gpt.h"
 #include "hal/hal_eeprom.h"
+#include "hal/hal_comm.h"
 #include "hal/hal_motor.h"
 #include "hal/hal_buzzer.h"
-#include "hal/hal_comm.h"
-#include "Types.h"
+#include <stdint.h>
 
-/*======================================================================
- *  Defines
- *====================================================================*/
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+#define MAX_ATTEMPTS                2      /* Maximum number of allowed password attempts. Counting starts from 0 so its 3 attempts */
+#define TIME_SYSTEMLOCK             60     /* Time to lock system after too many failed attempts */
+#define TIME_TO_OPEN_CLOSE_DOOR     15     /* Time to keep door open/close */
+#define PASSWORD_LENGTH             5      /* Length of password */
+#define ENTER_KEY                   '#'    /* Enter key on keypad (using # for enter) */
+#define CONTROL_ECU_READY           0X10   /* Indicator that Control ECU is ready */
+#define ASK_AGAIN                   0x69   /* Command to prompt user for password again */
+#define CHANGE_PASSWORD             0x68   /* Command to change password */
+#define SET_PASSWORD                0x64   /* Command to set new password */
+#define READ_PASSWORD               0x66   /* Command to read password */
+#define DISPLAY_OPTIONS             0x65   /* Command to display options */
+#define SET_TIMEOUT                 0x72   /* Command to set timeout using potentiometer */
+#define OPEN_DOOR                   0x67   /* Command to open door */
+#define ECU_CONFIRM                 0x15   /* Acknowledge command */
+#define DISPLAY_ERROR               0x70   /* Command to display error */
+#define SUCCESS                     1      /* Success indicator */
+#define FAILURE                     0      /* Failure indicator */
+#define HIMI_ECU_READY              0X11   /* Indicator that HMI ECU is ready */
+#define EEPROM_PASS_ADDRESS         0x0000 /* EEPROM address for storing password (word-aligned) */
 
-/* LED Configuration */
-#define LED_GPIO_PERIPH         SYSCTL_PERIPH_GPIOF
-#define LED_PORT_BASE           GPIO_PORTF_BASE
-#define GREEN_LED_PIN           (1U << 3)  /* PF3 */
-#define RED_LED_PIN             (1U << 1)  /* PF1 */
+/*******************************************************************************
+ *                              Functions Prototypes                           *
+ *******************************************************************************/
+void timerCallback(void);
+void delayMs(uint32_t ms);
 
-/* Communication Protocol Commands */
-#define CMD_SETUP_PASSWORD      'S'  /* Initial password setup */
-#define CMD_OPEN_DOOR           'O'  /* Open door request */
-#define CMD_CHANGE_PASSWORD     'C'  /* Change password */
-#define CMD_SET_TIMEOUT         'T'  /* Set auto-lock timeout */
-#define CMD_VERIFY_PASSWORD     'V'  /* Verify password (for timeout) */
-#define CMD_READY               'R'  /* System ready */
+/*******************************************************************************
+ *                              Global Variables                               *
+ *******************************************************************************/
+volatile uint8_t g_tick = 0;
 
-/* Communication Protocol Responses */
-#define RESP_SUCCESS            'Y'  /* Success/Yes */
-#define RESP_FAILURE            'N'  /* Failure/No */
-#define RESP_LOCKOUT            'L'  /* System locked out */
-#define RESP_READY              'R'  /* Ready for command */
+/* Timer configuration */
+Gpt_ConfigType timer_config = {
+    .timer_InitialValue = 16000000,      /* 1 second at 16MHz with prescaler 1 */
+    .timer_CompareValue = 0,
+    .timer_ID = GPT_TIMER0A,
+    .timer_mode = GPT_MODE_PERIODIC,
+    .captureEdge = GPT_CAPTURE_EDGE_RISING,
+    .enableInterrupt = 1
+};
 
-/* Password Configuration */
-#define PASSWORD_MAX_LENGTH     (16U)  /* Maximum password length (matches HAL_EEPROM) */
-#define PASSWORD_MIN_LENGTH     (4U)   /* Minimum password length (matches HAL_EEPROM) */
-#define MAX_PASSWORD_ATTEMPTS   (3U)   /* Maximum wrong attempts before lockout */
-#define LOCKOUT_BUZZER_DURATION (10000U)  /* 10 seconds buzzer on lockout */
-
-/* Timeout Configuration */
-#define TIMEOUT_MIN_SECONDS     (5U)   /* Minimum timeout: 5 seconds */
-#define TIMEOUT_MAX_SECONDS     (30U)  /* Maximum timeout: 30 seconds */
-#define TIMEOUT_DEFAULT_SECONDS (15U)  /* Default timeout: 15 seconds */
-
-/* EEPROM Addresses */
-#define EEPROM_TIMEOUT_ADDR     (28U)  /* Timeout value storage (after password flag at 24) */
-
-/*======================================================================
- *  Local Variables
- *====================================================================*/
-
-static uint8_t wrongAttempts = 0U;
-static boolean isLockedOut = FALSE;
-static uint32_t currentTimeout = TIMEOUT_DEFAULT_SECONDS;
-
-/*======================================================================
- *  Local Function Prototypes
- *====================================================================*/
-
-static void System_Init(void);
-static void LED_Init(void);
-static void LED_SetGreen(void);
-static void LED_SetRed(void);
-static void LED_Clear(void);
-static uint32_t EEPROM_ReadTimeout(void);
-static uint8_t EEPROM_StoreTimeout(uint32_t timeout);
-static void HandlePasswordSetup(void);
-static void HandleOpenDoor(void);
-static void HandleChangePassword(void);
-static void HandleSetTimeout(void);
-static void ActivateLockout(void);
-static void OpenDoorSequence(uint32_t timeoutSeconds);
-
-/*======================================================================
- *  Main Function
- *====================================================================*/
-
+/*******************************************************************************
+ *                              Main Function                                  *
+ *******************************************************************************/
 int main(void)
 {
-    uint8_t command;
-    uint8_t eepromResult;
-    
-    /* System Clock Setup */
-    //SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
-    
+    uint8_t first_check[PASSWORD_LENGTH];       /* First entered password */
+    uint8_t second_check[PASSWORD_LENGTH];      /* Re-entered password for verification */
+    uint8_t pass_confirm[PASSWORD_LENGTH];      /* Password confirmation array */
+    uint8_t command = SET_PASSWORD;              /* Initial command set to 'Set Password' */
+    uint8_t pass_mismatch;                       /* Password mismatch flag */
+    uint8_t error_count = 0;                     /* Password error count */
+    uint8_t options = 0;                         /* Options variable for menu */
+    uint8_t index;                               /* Loop index */
+
     /* Initialize all hardware modules */
-    System_Init();
+    BUZZER_init();                       /* Initialize Buzzer */
+    HAL_Motor_Init();                    /* Initialize DC Motor */
+    HAL_COMM_Init();                     /* Initialize UART Communication */
+    HAL_EEPROM_Init();                   /* Initialize EEPROM */
+    
+    /* Register timer callback */
+    Gpt_SetCallBack(timerCallback, GPT_TIMER0A);
 
- 
-    
-    /* Initialize EEPROM */
-    eepromResult = HAL_EEPROM_Init();
-    
-    if (eepromResult != HAL_EEPROM_SUCCESS)
+    /* System stability delay */
+    delayMs(1000);
+
+    /* Initialize handshake with HMI ECU */
+    while (HAL_COMM_ReceiveByte() != HIMI_ECU_READY)
     {
-        /* EEPROM initialization failed - indicate error with red LED */
-        LED_SetRed();
-        // while(1)
-        // {
-        //     /* System cannot function without EEPROM */
-        // }
+        /* Wait for HMI ECU to be ready */
     }
-    
-    /* Load timeout value from EEPROM */
-    currentTimeout = EEPROM_ReadTimeout();
-    // if (currentTimeout < TIMEOUT_MIN_SECONDS || currentTimeout > TIMEOUT_MAX_SECONDS)
-    // {
-    //     /* Invalid timeout, use default */
-    //     currentTimeout = TIMEOUT_DEFAULT_SECONDS;
-    //     EEPROM_StoreTimeout(currentTimeout);
-    // }
-    
-    /* Send ready signal to HMI */
-    HAL_COMM_SendByte(CMD_READY);
-    HAL_COMM_SendByte(CMD_READY);
-    HAL_COMM_SendByte(CMD_READY);
+    HAL_COMM_SendByte(CONTROL_ECU_READY);
+    delayMs(100);
 
-    
-    //HAL_EEPROM_ClearPassword();  /* For testing: clear existing password */
-    
-    /* Main application loop */
-    while(1)
+    while (1)
     {
-        /* Check if data is available from HMI */
-        if (HAL_COMM_IsDataAvailable())
+        /* Send current command to HMI ECU */
+        HAL_COMM_SendByte(command);
+
+        switch (command)
         {
-            /* Read command byte */
-            command = HAL_COMM_ReceiveByte();
-            
-            /* Process command based on current state */
-            switch(command)
+        case SET_PASSWORD:
+            pass_mismatch = 0; /* Reset password mismatch flag */
+
+            /* Receive first password entry */
+            for (index = 0; index < PASSWORD_LENGTH; index++)
             {
-                case CMD_SETUP_PASSWORD:
-                    if (!isLockedOut)
-                    {
-                        HandlePasswordSetup();
-                    }
-                    else
-                    {
-                        HAL_COMM_SendByte(RESP_LOCKOUT);
-                    }
-                    break;
-                    
-                case CMD_OPEN_DOOR:
-                    if (!isLockedOut)
-                    {
-                        HandleOpenDoor();
-                    }
-                    else
-                    {
-                        HAL_COMM_SendByte(RESP_LOCKOUT);
-                    }
-                    break;
-                    
-                case CMD_CHANGE_PASSWORD:
-                    if (!isLockedOut)
-                    {
-                        HandleChangePassword();
-                    }
-                    else
-                    {
-                        HAL_COMM_SendByte(RESP_LOCKOUT);
-                    }
-                    break;
-                    
-                case CMD_SET_TIMEOUT:
-                    if (!isLockedOut)
-                    {
-                        HandleSetTimeout();
-                    }
-                    else
-                    {
-                        HAL_COMM_SendByte(RESP_LOCKOUT);
-                    }
-                    break;
-                    
-                default:
-                    /* Unknown command - ignore */
-                    break;
+                first_check[index] = HAL_COMM_ReceiveByte();
             }
-        }
-        
-        /* Small delay to prevent busy-waiting */
-        MCAL_SysTick_DelayMs(10U);
-    }
-    
-    //return 0;
-}
 
-/*======================================================================
- *  Initialization Functions
- *====================================================================*/
+            /* Receive second password entry */
+            for (index = 0; index < PASSWORD_LENGTH; index++)
+            {
+                second_check[index] = HAL_COMM_ReceiveByte();
+            }
 
-/**
- * @brief Initialize all system modules
- */
-static void System_Init(void)
-{
-    /* Initialize SysTick for delays */
-    MCAL_SysTick_Init();
-    
-    /* Initialize UART communication */
-    HAL_COMM_Init();
-    
-    /* Initialize Motor */
-    HAL_Motor_Init();
-    
-    /* Initialize Buzzer */
-    BUZZER_init();
-    
-    /* Initialize LEDs */
-    LED_Init();
-    
-    /* Ensure motor is stopped initially */
-    HAL_Motor_Move(MOTOR_STOP);
-}
+            (void)HAL_COMM_ReceiveByte(); /* Receive and discard Enter key */
 
-/**
- * @brief Initialize LED pins
- */
-static void LED_Init(void)
-{
-    MCAL_GPIO_EnablePort(LED_GPIO_PERIPH);
-    MCAL_GPIO_InitPin(LED_PORT_BASE, GREEN_LED_PIN | RED_LED_PIN, 
-                      GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
-    LED_Clear();
-}
+            /* Compare both password entries */
+            for (index = 0; index < PASSWORD_LENGTH; index++)
+            {
+                if (first_check[index] != second_check[index])
+                {
+                    pass_mismatch = 1; /* Set mismatch flag if passwords differ */
+                    break;
+                }
+            }
 
-/**
- * @brief Set green LED on, red LED off
- */
-static void LED_SetGreen(void)
-{
-    MCAL_GPIO_WritePin(LED_PORT_BASE, GREEN_LED_PIN, LOGIC_HIGH);
-    MCAL_GPIO_WritePin(LED_PORT_BASE, RED_LED_PIN, LOGIC_LOW);
-}
+            /* Store password in EEPROM if entries match */
+            if (pass_mismatch == 0)
+            {
+                HAL_EEPROM_StorePassword((const char *)first_check, PASSWORD_LENGTH);
+                command = DISPLAY_OPTIONS; /* Move to options menu */
+            }
+            break;
 
-/**
- * @brief Set red LED on, green LED off
- */
-static void LED_SetRed(void)
-{
-    MCAL_GPIO_WritePin(LED_PORT_BASE, GREEN_LED_PIN, LOGIC_LOW);
-    MCAL_GPIO_WritePin(LED_PORT_BASE, RED_LED_PIN, LOGIC_HIGH);
-}
+        case DISPLAY_OPTIONS:
+            options = HAL_COMM_ReceiveByte(); /* Receive selected option */
 
-/**
- * @brief Turn off both LEDs
- */
-static void LED_Clear(void)
-{
-    MCAL_GPIO_WritePin(LED_PORT_BASE, GREEN_LED_PIN, LOGIC_LOW);
-    MCAL_GPIO_WritePin(LED_PORT_BASE, RED_LED_PIN, LOGIC_LOW);
-}
+            if (options == 'A')
+            {
+                command = READ_PASSWORD; /* Command to read password (open door) */
+            }
+            else if (options == 'B')
+            {
+                command = CHANGE_PASSWORD; /* Command to change password */
+            }
+            else if (options == 'C')
+            {
+                command = SET_TIMEOUT; /* Command to set timeout */
+            }
+            break;
 
-/*======================================================================
- *  EEPROM Timeout Functions
- *====================================================================*/
+        case SET_TIMEOUT:
+            /* Timeout is set on HMI side using potentiometer */
+            /* Just acknowledge and return to options */
+            command = DISPLAY_OPTIONS;
+            break;
 
-/**
- * @brief Read timeout value from EEPROM
- * @return Timeout value in seconds, or default if invalid
- */
-static uint32_t EEPROM_ReadTimeout(void)
-{
-    uint8_t result;
-    uint32_t timeoutWord;
-    
-    result = MCAL_EEPROM_ReadWord(EEPROM_TIMEOUT_ADDR, &timeoutWord);
-    
-    if (result == EEPROM_SUCCESS)
-    {
-        /* Validate timeout range */
-        if (timeoutWord >= TIMEOUT_MIN_SECONDS && timeoutWord <= TIMEOUT_MAX_SECONDS)
-        {
-            return timeoutWord;
-        }
-    }
-    
-    /* Return default if read failed or value invalid */
-    return TIMEOUT_DEFAULT_SECONDS;
-}
+        case READ_PASSWORD:
+            /* Receive password to confirm */
+            for (index = 0; index < PASSWORD_LENGTH; index++)
+            {
+                pass_confirm[index] = HAL_COMM_ReceiveByte();
+            }
 
-/**
- * @brief Store timeout value to EEPROM
- * @param timeout Timeout value in seconds (5-30)
- * @return HAL_EEPROM_SUCCESS if stored successfully
- */
-static uint8_t EEPROM_StoreTimeout(uint32_t timeout)
-{
-    uint8_t result;
-    
-    /* Validate timeout range */
-    if (timeout < TIMEOUT_MIN_SECONDS || timeout > TIMEOUT_MAX_SECONDS)
-    {
-        return HAL_EEPROM_ERROR_INVALID_PARAM;
-    }
-    
-    /* Store timeout value */
-    result = MCAL_EEPROM_WriteWord(EEPROM_TIMEOUT_ADDR, timeout);
-    
-    if (result == EEPROM_SUCCESS)
-    {
-        return HAL_EEPROM_SUCCESS;
-    }
-    else
-    {
-        return HAL_EEPROM_ERROR_WRITE;
-    }
-}
+            (void)HAL_COMM_ReceiveByte(); /* Receive and discard Enter key */
 
-/*======================================================================
- *  Command Handlers
- *====================================================================*/
+            /* Verify password using HAL function */
+            if (HAL_EEPROM_VerifyPassword((const char *)pass_confirm, PASSWORD_LENGTH) == FALSE)
+            {
+                command = ASK_AGAIN;
+            }
+            else
+            {
+                command = OPEN_DOOR;
+            }
+            break;
 
-/**
- * @brief Handle initial password setup
- * Protocol:
- * 1. Receive first password (5 digits)
- * 2. Receive second password (5 digits) for confirmation
- * 3. Compare and store if match, otherwise send failure
- */
-static void HandlePasswordSetup(void)
-{
-    char password1[PASSWORD_MAX_LENGTH + 1U];
-    char password2[PASSWORD_MAX_LENGTH + 1U];
-    boolean passwordsMatch;
-    uint8_t result;
-    uint8_t len1, len2;
-    uint8_t i;
-    
-    /* Receive first password length */
-    len1 = HAL_COMM_ReceiveByte();
-    
-    /* If length is 0, this is a query - check if password is already set */
-    if (len1 == 0U)
-    {
-        if (HAL_EEPROM_IsPasswordSet())
-        {
-            HAL_COMM_SendByte(RESP_FAILURE);  /* Password already set */
-        }
-        else
-        {
-            HAL_COMM_SendByte(RESP_SUCCESS);  /* No password, need setup */
-        }
-        return;
-    }
-    
-    /* Validate first password length */
-    if (len1 < PASSWORD_MIN_LENGTH || len1 > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive first password (variable length) */
-    for (i = 0U; i < len1; i++)
-    {
-        password1[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    password1[len1] = '\0';
-    
-    /* Receive second password length */
-    len2 = HAL_COMM_ReceiveByte();
-    
-    /* Validate second password length */
-    if (len2 < PASSWORD_MIN_LENGTH || len2 > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive second password (confirmation, variable length) */
-    for (i = 0U; i < len2; i++)
-    {
-        password2[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    password2[len2] = '\0';
-    
-    /* Check if lengths match first */
-    if (len1 != len2)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Compare passwords */
-    passwordsMatch = TRUE;
-    for (i = 0U; i < len1; i++)
-    {
-        if (password1[i] != password2[i])
-        {
-            passwordsMatch = FALSE;
+        case OPEN_DOOR:
+            /* Open door - motor forward */
+            HAL_Motor_Move(MOTOR_FORWARD);
+            
+            /* Initialize and start timer */
+            g_tick = 0;
+            Gpt_Init(&timer_config);
+            Gpt_Start(GPT_TIMER0A);
+            
+            while (g_tick < TIME_TO_OPEN_CLOSE_DOOR)
+            {
+                /* Wait for door to open */
+            }
+            
+            g_tick = 0;
+            Gpt_Stop(GPT_TIMER0A);
+            Gpt_DeInit(GPT_TIMER0A);
+
+            /* Stop motor */
+            HAL_Motor_Move(MOTOR_STOP);
+            
+            /* Wait for 3 seconds before closing (simulating people entering) */
+            delayMs(3000);
+
+            /* Close door - motor backward */
+            HAL_Motor_Move(MOTOR_BACKWARD);
+            
+            /* Initialize and start timer again */
+            g_tick = 0;
+            Gpt_Init(&timer_config);
+            Gpt_Start(GPT_TIMER0A);
+            
+            while (g_tick < TIME_TO_OPEN_CLOSE_DOOR)
+            {
+                /* Wait for door to close */
+            }
+            
+            g_tick = 0;
+            Gpt_Stop(GPT_TIMER0A);
+            Gpt_DeInit(GPT_TIMER0A);
+
+            /* Stop motor */
+            HAL_Motor_Move(MOTOR_STOP);
+            command = DISPLAY_OPTIONS; /* Return to options */
+            break;
+
+        case CHANGE_PASSWORD:
+            /* Receive password for verification */
+            for (index = 0; index < PASSWORD_LENGTH; index++)
+            {
+                pass_confirm[index] = HAL_COMM_ReceiveByte();
+            }
+
+            (void)HAL_COMM_ReceiveByte(); /* Receive and discard Enter key */
+
+            /* Verify password using HAL function */
+            if (HAL_EEPROM_VerifyPassword((const char *)pass_confirm, PASSWORD_LENGTH) == FALSE)
+            {
+                command = ASK_AGAIN;
+            }
+            else
+            {
+                command = SET_PASSWORD; /* Move to set new password */
+            }
+            break;
+
+        case ASK_AGAIN:
+            error_count++;
+
+            if (error_count >= MAX_ATTEMPTS)
+            {
+                command = DISPLAY_ERROR;
+            }
+            else
+            {
+                command = DISPLAY_OPTIONS;
+            }
+            break;
+
+        case DISPLAY_ERROR:
+            BUZZER_setState(BUZZER_ON);
+            
+            /* Initialize and start timer */
+            g_tick = 0;
+            Gpt_Init(&timer_config);
+            Gpt_Start(GPT_TIMER0A);
+            
+            while (g_tick < TIME_SYSTEMLOCK)
+            {
+                /* System locked for 60 seconds */
+            }
+            
+            g_tick = 0;
+            Gpt_Stop(GPT_TIMER0A);
+            Gpt_DeInit(GPT_TIMER0A);
+
+            BUZZER_setState(BUZZER_OFF);
+            error_count = 0;
+            command = DISPLAY_OPTIONS;
+            break;
+
+        default:
             break;
         }
     }
-    
-    if (passwordsMatch)
-    {
-        /* Store password to EEPROM */
-        result = HAL_EEPROM_StorePassword(password1, len1);
-        if (result == HAL_EEPROM_SUCCESS)
-        {
-            HAL_COMM_SendByte(RESP_SUCCESS);
-            LED_SetGreen();
-            wrongAttempts = 0U;  /* Reset wrong attempts */
-            isLockedOut = FALSE;  /* Clear lockout on success */
-        }
-        else
-        {
-            HAL_COMM_SendByte(RESP_FAILURE);
-        }
-    }
-    else
-    {
-        /* Passwords don't match */
-        HAL_COMM_SendByte(RESP_FAILURE);
-    }
+
+    return 0;
+}
+
+/*******************************************************************************
+ *                              Functions Definitions                          *
+ *******************************************************************************/
+
+/**
+ * @brief Timer callback function - increments tick counter every second
+ */
+void timerCallback(void)
+{
+    g_tick++;
 }
 
 /**
- * @brief Handle open door request
- * Protocol:
- * 1. Receive password from HMI
- * 2. Verify password
- * 3. If correct: open door, wait timeout, close door
- * 4. If wrong: increment attempts, activate lockout if 3 failures
+ * @brief Simple delay function using SysTick
+ * @param ms - delay time in milliseconds
  */
-static void HandleOpenDoor(void)
+void delayMs(uint32_t ms)
 {
-    char receivedPassword[PASSWORD_MAX_LENGTH + 1U];
-    boolean isCorrect;
-    uint8_t pwdLen;
-    uint8_t i;
-    
-    /* Receive password length */
-    pwdLen = HAL_COMM_ReceiveByte();
-    
-    /* Validate length */
-    if (pwdLen > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive password from HMI (variable length) */
-    for (i = 0U; i < pwdLen; i++)
-    {
-        receivedPassword[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    receivedPassword[pwdLen] = '\0';
-    
-    /* Verify password */
-    isCorrect = HAL_EEPROM_VerifyPassword(receivedPassword, pwdLen);
-    
-    if (isCorrect)
-    {
-        /* Correct password - open door */
-        HAL_COMM_SendByte(RESP_SUCCESS);
-        LED_SetGreen();
-        wrongAttempts = 0U;  /* Reset wrong attempts */
-        isLockedOut = FALSE;  /* Clear lockout on success */
-        OpenDoorSequence(currentTimeout);
-    }
-    else
-    {
-        /* Wrong password */
-        HAL_COMM_SendByte(RESP_FAILURE);
-        LED_SetRed();
-        wrongAttempts++;
-        
-        if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
-        {
-            ActivateLockout();
-        }
-    }
+    MCAL_SysTick_DelayMs(ms);
 }
-
-/**
- * @brief Handle change password request
- * Protocol:
- * 1. Receive old password
- * 2. Verify old password
- * 3. If correct: receive new password twice (confirmation)
- * 4. Store new password if confirmation matches
- */
-static void HandleChangePassword(void)
-{
-    char oldPassword[PASSWORD_MAX_LENGTH + 1U];
-    char newPassword1[PASSWORD_MAX_LENGTH + 1U];
-    char newPassword2[PASSWORD_MAX_LENGTH + 1U];
-    boolean passwordsMatch;
-    uint8_t result;
-    uint8_t oldLen, newLen1, newLen2;
-    uint8_t i;
-    
-    /* Receive old password length */
-    oldLen = HAL_COMM_ReceiveByte();
-    
-    /* Validate length */
-    if (oldLen > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive old password (variable length) */
-    for (i = 0U; i < oldLen; i++)
-    {
-        oldPassword[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    oldPassword[oldLen] = '\0';
-    
-    /* Verify old password */
-    if (!HAL_EEPROM_VerifyPassword(oldPassword, oldLen))
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        LED_SetRed();
-        wrongAttempts++;
-        if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
-        {
-            ActivateLockout();
-        }
-        return;
-    }
-    
-    /* Old password correct - receive new password length */
-    newLen1 = HAL_COMM_ReceiveByte();
-    
-    /* Validate new password length */
-    if (newLen1 < PASSWORD_MIN_LENGTH || newLen1 > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive new password (variable length) */
-    for (i = 0U; i < newLen1; i++)
-    {
-        newPassword1[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    newPassword1[newLen1] = '\0';
-    
-    /* Receive confirmation length */
-    newLen2 = HAL_COMM_ReceiveByte();
-    
-    /* Validate confirmation length */
-    if (newLen2 < PASSWORD_MIN_LENGTH || newLen2 > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive confirmation (variable length) */
-    for (i = 0U; i < newLen2; i++)
-    {
-        newPassword2[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    newPassword2[newLen2] = '\0';
-    
-    /* Check if lengths match first */
-    if (newLen1 != newLen2)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Compare new passwords */
-    passwordsMatch = TRUE;
-    for (i = 0U; i < newLen1; i++)
-    {
-        if (newPassword1[i] != newPassword2[i])
-        {
-            passwordsMatch = FALSE;
-            break;
-        }
-    }
-    
-    if (passwordsMatch)
-    {
-        /* Store new password */
-        result = HAL_EEPROM_ChangePassword(oldPassword, oldLen,
-                                           newPassword1, newLen1);
-        if (result == HAL_EEPROM_SUCCESS)
-        {
-            HAL_COMM_SendByte(RESP_SUCCESS);
-            LED_SetGreen();
-            wrongAttempts = 0U;  /* Reset wrong attempts */
-            isLockedOut = FALSE;  /* Clear lockout on success */
-        }
-        else
-        {
-            HAL_COMM_SendByte(RESP_FAILURE);
-        }
-    }
-    else
-    {
-        /* New passwords don't match */
-        HAL_COMM_SendByte(RESP_FAILURE);
-    }
-}
-
-/**
- * @brief Handle set timeout request
- * Protocol:
- * 1. Receive timeout value (as single byte integer, 5-30)
- * 2. Receive password for verification (exactly 5 bytes)
- * 3. If password correct: store timeout value
- */
-static void HandleSetTimeout(void)
-{
-    char password[PASSWORD_MAX_LENGTH + 1U];
-    uint8_t timeoutValue;
-    uint8_t result;
-    uint8_t i;
-    
-    /* Receive timeout value as single byte (integer) */
-    timeoutValue = HAL_COMM_ReceiveByte();
-    
-    /* Validate timeout range (5-30 seconds) */
-    if (timeoutValue < TIMEOUT_MIN_SECONDS || timeoutValue > TIMEOUT_MAX_SECONDS)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive password length */
-    uint8_t pwdLen = HAL_COMM_ReceiveByte();
-    
-    /* Validate length */
-    if (pwdLen > PASSWORD_MAX_LENGTH)
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        return;
-    }
-    
-    /* Receive password for verification (variable length) */
-    for (i = 0U; i < pwdLen; i++)
-    {
-        password[i] = (char)HAL_COMM_ReceiveByte();
-    }
-    password[pwdLen] = '\0';
-    
-    /* Verify password */
-    if (!HAL_EEPROM_VerifyPassword(password, pwdLen))
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-        LED_SetRed();
-        wrongAttempts++;
-        if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
-        {
-            ActivateLockout();
-        }
-        return;
-    }
-    
-    /* Password correct - store timeout */
-    result = EEPROM_StoreTimeout((uint32_t)timeoutValue);
-    if (result == HAL_EEPROM_SUCCESS)
-    {
-        currentTimeout = (uint32_t)timeoutValue;
-        HAL_COMM_SendByte(RESP_SUCCESS);
-        LED_SetGreen();
-        wrongAttempts = 0U;  /* Reset wrong attempts */
-        isLockedOut = FALSE;  /* Clear lockout on success */
-    }
-    else
-    {
-        HAL_COMM_SendByte(RESP_FAILURE);
-    }
-}
-
-/*======================================================================
- *  Helper Functions
- *====================================================================*/
-
-
-/**
- * @brief Activate lockout mode (3 wrong attempts)
- * - Sound buzzer for specified duration
- * - Set lockout flag during buzzer period
- * - Reset wrong attempts counter
- * - Clear lockout after buzzer period (system returns to main menu)
- */
-static void ActivateLockout(void)
-{
-    isLockedOut = TRUE;
-    wrongAttempts = 0U;
-    LED_SetRed();
-    
-    /* Sound buzzer for lockout duration */
-    BUZZER_beep(LOCKOUT_BUZZER_DURATION);
-    
-    /* After lockout period, clear lockout flag (system returns to main menu) */
-    isLockedOut = FALSE;
-}
-
-/**
- * @brief Execute door opening sequence
- * @param timeoutSeconds Timeout in seconds before auto-lock
- */
-static void OpenDoorSequence(uint32_t timeoutSeconds)
-{
-    /* 1. Unlock door (motor forward) */
-    HAL_Motor_Move(MOTOR_FORWARD);
-    
-    /* 2. Wait for bolt to retract (2 seconds) */
-    MCAL_SysTick_DelayMs(2000U);
-    
-    /* 3. Stop motor (hold position) */
-    HAL_Motor_Move(MOTOR_STOP);
-    
-    /* 4. Wait for timeout period (user can enter) */
-    MCAL_SysTick_DelayMs(timeoutSeconds * 1000U);
-    
-    /* 5. Lock door (motor backward) */
-    HAL_Motor_Move(MOTOR_BACKWARD);
-    
-    /* 6. Wait for bolt to extend (2 seconds) */
-    MCAL_SysTick_DelayMs(2000U);
-    
-    /* 7. Stop motor */
-    HAL_Motor_Move(MOTOR_STOP);
-}
+ 
