@@ -50,19 +50,19 @@ static void Handle_SetTimeout(void);
 
 int main(void)
 {
-    SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
+    //SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
 
     HMI_Init();
     HMI_WaitForReady();
 
-    for (;;)
+    while(1)
     {
         /* Show main menu */
-        LCD_Clear();
-        LCD_SetCursor(0, 0);
-        LCD_WriteString("+Open  -Change");
-        LCD_SetCursor(1, 0);
-        LCD_WriteString("*Timeout");
+        Lcd_Clear();
+        Lcd_GoToRowColumn(0, 0);
+        Lcd_DisplayString("+Open  -Change");
+        Lcd_GoToRowColumn(1, 0);
+        Lcd_DisplayString("*Timeout");
 
         char key = HMI_WaitKey();
 
@@ -89,18 +89,18 @@ int main(void)
 static void HMI_Init(void)
 {
     MCAL_SysTick_Init();
-    LCD_Init();
+    Lcd_Init();
     HAL_Keypad_Init();
     POT_Init();
     RGB_LED_Init();
     HAL_COMM_Init();
-    LCD_Clear();
+    Lcd_Clear();
 }
 
 static void HMI_WaitForReady(void)
 {
-    LCD_Clear();
-    LCD_WriteString("Waiting Control");
+    Lcd_Clear();
+    Lcd_DisplayString("Waiting Control");
     while (1)
     {
         if (HAL_COMM_IsDataAvailable())
@@ -108,8 +108,8 @@ static void HMI_WaitForReady(void)
             uint8_t b = HAL_COMM_ReceiveByte();
             if (b == RESP_READY)
             {
-                LCD_Clear();
-                LCD_WriteString("Control Ready");
+                Lcd_Clear();
+                Lcd_DisplayString("Control Ready");
                 MCAL_SysTick_DelayMs(800U);
                 return;
             }
@@ -128,14 +128,14 @@ static char HMI_WaitKey(void)
 
 static void HMI_ReadPassword(char *buf)
 {
-    LCD_Clear();
-    LCD_WriteString("Enter PWD:");
-    LCD_SetCursor(1, 0);
+    Lcd_Clear();
+    Lcd_DisplayString("Enter PWD:");
+    Lcd_GoToRowColumn(1, 0);
     for (uint8_t i = 0; i < PASSWORD_LENGTH; i++)
     {
         char k = HMI_WaitKey();
         buf[i] = k;
-        LCD_WriteChar('*');
+        Lcd_DisplayCharacter('*');
     }
 }
 
@@ -158,9 +158,9 @@ static uint8_t HMI_WaitResponse(void)
 
 static void HMI_ShowMessage(const char *line1, const char *line2, uint32_t delayMs)
 {
-    LCD_Clear();
-    if (line1) { LCD_SetCursor(0, 0); LCD_WriteString(line1); }
-    if (line2) { LCD_SetCursor(1, 0); LCD_WriteString(line2); }
+    Lcd_Clear();
+    if (line1) { Lcd_GoToRowColumn(0, 0); Lcd_DisplayString(line1); }
+    if (line2) { Lcd_GoToRowColumn(1, 0); Lcd_DisplayString(line2); }
     if (delayMs > 0U) { MCAL_SysTick_DelayMs(delayMs); }
 }
 
@@ -233,15 +233,15 @@ static void Handle_ChangePassword(void)
 static void Handle_SetTimeout(void)
 {
     uint8_t timeoutVal = TIMEOUT_MIN_SECONDS;
-    LCD_Clear();
-    LCD_WriteString("Adj Timeout");
-    LCD_SetCursor(1, 0);
-    LCD_WriteString("#=OK  *=Back");
+    Lcd_Clear();
+    Lcd_DisplayString("Adj Timeout");
+    Lcd_GoToRowColumn(1, 0);
+    Lcd_DisplayString("#=OK  *=Back");
 
     while (1)
     {
         timeoutVal = HMI_ReadTimeoutFromPot();
-        LCD_SetCursor(0, 12);
+        Lcd_GoToRowColumn(0, 12);
         /* Overwrite with current value */
         char buf[5];
         buf[0] = (char)('0' + (timeoutVal / 10U));
@@ -249,7 +249,7 @@ static void Handle_SetTimeout(void)
         buf[2] = 's';
         buf[3] = ' ';
         buf[4] = '\0';
-        LCD_WriteString(buf);
+        Lcd_DisplayString(buf);
 
         char k = HAL_Keypad_GetKey();
         if (k == '#')

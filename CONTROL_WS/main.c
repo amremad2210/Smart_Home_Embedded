@@ -113,7 +113,7 @@ int main(void)
     uint8_t eepromResult;
     
     /* System Clock Setup */
-    SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
+    //SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
     
     /* Initialize all hardware modules */
     System_Init();
