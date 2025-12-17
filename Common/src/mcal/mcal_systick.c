@@ -104,6 +104,28 @@ void MCAL_SysTick_DelayMs(uint32_t ms)
     }
 }
 
+void MCAL_SysTick_DelayUs(uint32_t us)
+{
+    /*
+     * For microsecond delays, we use a calibrated busy-wait loop.
+     * This is more accurate than trying to use the 1ms SysTick counter.
+     * 
+     * Assumes ~3 cycles per loop iteration (typical for simple while loop).
+     * Adjust CYCLES_PER_LOOP if needed for your specific compiler/optimization.
+     */
+    #define CYCLES_PER_LOOP 3U
+    
+    uint32_t cycles = (g_sysClkHz / 1000000U) * us;  /* Total cycles needed */
+    uint32_t loops = cycles / CYCLES_PER_LOOP;
+    
+    /* Simple busy-wait loop */
+    volatile uint32_t i;
+    for (i = 0; i < loops; i++)
+    {
+        /* Empty loop body - just counting */
+    }
+}
+
 uint32_t MCAL_SysTick_GetClockHz(void)
 {
     return g_sysClkHz;
