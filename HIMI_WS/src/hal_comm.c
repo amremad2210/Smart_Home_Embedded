@@ -51,6 +51,9 @@ uint8_t HAL_COMM_Init(void)
     /* Initialize UART through MCAL */
     UART_init(&uartConfig);
     
+    /* Small delay to ensure UART is fully initialized */
+    SysCtlDelay(SysCtlClockGet() / (3U * 1000U));  /* ~1ms delay */
+    
     isInitialized = TRUE;
     
     return HAL_COMM_SUCCESS;

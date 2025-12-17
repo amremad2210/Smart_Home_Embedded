@@ -117,6 +117,8 @@ int main(void)
     
     /* Initialize all hardware modules */
     System_Init();
+
+ 
     
     /* Initialize EEPROM */
     eepromResult = HAL_EEPROM_Init();
@@ -142,8 +144,11 @@ int main(void)
     
     /* Send ready signal to HMI */
     HAL_COMM_SendByte(CMD_READY);
+    HAL_COMM_SendByte(CMD_READY);
+    HAL_COMM_SendByte(CMD_READY);
+
     
-    HAL_EEPROM_ClearPassword();  /* For testing: clear existing password */
+    //HAL_EEPROM_ClearPassword();  /* For testing: clear existing password */
     
     /* Main application loop */
     while(1)
