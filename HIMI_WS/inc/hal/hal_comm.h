@@ -17,12 +17,12 @@
  *====================================================================*/
 
 /* UART Configuration */
-#define HAL_COMM_UART_MODULE        UART0_BASE
-#define HAL_COMM_UART_PERIPH        SYSCTL_PERIPH_UART0
-#define HAL_COMM_GPIO_PERIPH        SYSCTL_PERIPH_GPIOA
-#define HAL_COMM_GPIO_PORT          GPIO_PORTA_BASE
-#define HAL_COMM_RX_PIN             GPIO_PIN_0     /* PA0 - U0RX */
-#define HAL_COMM_TX_PIN             GPIO_PIN_1     /* PA1 - U0TX */
+#define HAL_COMM_UART_MODULE        UART1_BASE
+#define HAL_COMM_UART_PERIPH        SYSCTL_PERIPH_UART1
+#define HAL_COMM_GPIO_PERIPH        SYSCTL_PERIPH_GPIOB
+#define HAL_COMM_GPIO_PORT          GPIO_PORTB_BASE
+#define HAL_COMM_RX_PIN             GPIO_PIN_0     /* PB0 - U1RX */
+#define HAL_COMM_TX_PIN             GPIO_PIN_1     /* PB1 - U1TX */
 #define HAL_COMM_BAUD_RATE          115200U
 #define HAL_COMM_SYSTEM_CLOCK       16000000U      /* 16 MHz */
 
@@ -41,12 +41,12 @@
  *====================================================================*/
 
 /**
- * @brief Initialize the HAL communication module (UART0).
+ * @brief Initialize the HAL communication module (UART1).
  *
  * This function:
- * - Enables UART0 and GPIOA peripheral clocks
- * - Configures PA0 (RX) and PA1 (TX) for UART0
- * - Initializes UART0 with 115200 baud, 8N1 configuration
+ * - Enables UART1 and GPIOB peripheral clocks
+ * - Configures PB0 (RX) and PB1 (TX) for UART1
+ * - Initializes UART1 with 115200 baud, 8N1 configuration
  *
  * Must be called before any other HAL_COMM functions.
  *

@@ -2108,6 +2108,9 @@
                     <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_gpt.h</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_i2c.h</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\Common\inc\mcal\mcal_systick.h</name>
                 </file>
                 <file>
@@ -2138,6 +2141,9 @@
                     <name>$PROJ_DIR$\..\Common\src\mcal\mcal_gpt.c</name>
                 </file>
                 <file>
+                    <name>$PROJ_DIR$\..\Common\src\mcal\mcal_i2c.c</name>
+                </file>
+                <file>
                     <name>$PROJ_DIR$\..\Common\src\mcal\mcal_systick.c</name>
                 </file>
                 <file>
@@ -2152,6 +2158,9 @@
             <name>hal</name>
             <file>
                 <name>$PROJ_DIR$\inc\hal\hal_comm.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\CONTROL_WS\inc\hal\hal_eeprom.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\inc\hal\hal_keypad.h</name>
@@ -2173,6 +2182,9 @@
             <name>hal</name>
             <file>
                 <name>$PROJ_DIR$\src\hal_comm.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\CONTROL_WS\src\hal\hal_eeprom.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\src\hal_keypad.c</name>

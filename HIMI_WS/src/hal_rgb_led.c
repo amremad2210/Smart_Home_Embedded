@@ -1,5 +1,7 @@
 #include "hal/hal_rgb_led.h"
 #include "mcal/mcal_gpio.h"   // Use the GPIO driver, not registers
+#include <stdint.h>
+#include <stdbool.h>
 
 // Which port do the RGB LED pins belong to?
 #define RGB_LED_PORT     GPIO_PORTF_BASE

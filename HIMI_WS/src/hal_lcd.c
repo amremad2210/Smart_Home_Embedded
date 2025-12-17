@@ -1,221 +1,121 @@
-/*****************************************************************************
- * File: lcd.c
- * Description: 16x2 LCD Driver Implementation (4-bit mode)
- * Author: Ahmedhh
- * Date: December 4, 2025
- * 
- * Pin Configuration:
- *   RS  -> PB0 (Register Select: 0=Command, 1=Data)
- *   EN  -> PB1 (Enable signal)
- *   D4  -> PB2 (Data bit 4)
- *   D5  -> PB3 (Data bit 5)
- *   D6  -> PB4 (Data bit 6)
- *   D7  -> PB5 (Data bit 7)
- *****************************************************************************/
-
 #include "hal/hal_lcd.h"
-#include "mcal/mcal_gpio.h"
+#include "mcal/mcal_i2c.h"
 #include "mcal/mcal_systick.h"
+#include <stdint.h> 
+#include "Types.h"
 
-// LCD pin/port definitions for mcal_gpio.h
-#define LCD_PORT GPIO_PORTB_BASE
-#define LCD_RS GPIO_PIN_0
-#define LCD_EN GPIO_PIN_1
-#define LCD_D4 GPIO_PIN_2
-#define LCD_D5 GPIO_PIN_3
-#define LCD_D6 GPIO_PIN_4
-#define LCD_D7 GPIO_PIN_5
+// I2C Address (Try 0x27 first, if that fails try 0x3F)
+#define LCD_ADDRESS   0x27
 
-#define LCD_GPIO_PERIPH SYSCTL_PERIPH_GPIOB
-
-#define LCD_PIN_OUTPUT GPIO_DIR_OUTPUT
-#define LCD_PIN_INPUT GPIO_DIR_INPUT
-#define LCD_PIN_HIGH 1
-#define LCD_PIN_LOW 0
-
-// Delay function using SysTick
-#define DelayMs(ms) MCAL_SysTick_DelayMs(ms)
-
-/******************************************************************************
- *                            Pin Definitions                                  *
- ******************************************************************************/
-
-
-
-/******************************************************************************
- *                          Private Functions                                  *
- ******************************************************************************/
-
-/*
- * LCD_EnablePulse
- * Generates a high-to-low pulse on the EN pin to latch data/command.
- */
-static void LCD_EnablePulse(void)
-{
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_EN, LCD_PIN_HIGH);
-    DelayMs(1);  /* Enable pulse width */
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_EN, LCD_PIN_LOW);
-    DelayMs(1);  /* Wait for command to execute */
+// Helper Delay (Timing is critical for Init!)
+void Delay_us(uint32_t n) {
+    uint32_t i, j;
+    for(i=0; i<n; i++) for(j=0; j<3; j++);
 }
 
-/*
- * LCD_Send4Bits
- * Sends 4 bits of data to the LCD via D4-D7 pins.
- * Parameters: nibble - 4-bit value to send (bits 0-3 used)
- */
-static void LCD_Send4Bits(uint8_t nibble)
+/* ======================================================= */
+/* HELPER: SEND ONLY 4 BITS (Used for Init Sync)           */
+/* ======================================================= */
+void Lcd_Write_Nibble(uint8_t nibble, uint8_t rs_mode)
 {
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_D4, (nibble >> 0) & 0x01);
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_D5, (nibble >> 1) & 0x01);
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_D6, (nibble >> 2) & 0x01);
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_D7, (nibble >> 3) & 0x01);
-    LCD_EnablePulse();
-}
-
-/******************************************************************************
- *                          Public Functions                                   *
- ******************************************************************************/
-
-/*
- * LCD_Init
- * Initializes the LCD in 4-bit mode.
- */
-void LCD_Init(void)
-{
-    // Enable clock for GPIOB
-    MCAL_GPIO_EnablePort(LCD_GPIO_PERIPH);
-
-    // Initialize LCD pins as output
-    MCAL_GPIO_InitPin(LCD_PORT, LCD_RS, LCD_PIN_OUTPUT, GPIO_ATTACH_DEFAULT);
-    MCAL_GPIO_InitPin(LCD_PORT, LCD_EN, LCD_PIN_OUTPUT, GPIO_ATTACH_DEFAULT);
-    MCAL_GPIO_InitPin(LCD_PORT, LCD_D4, LCD_PIN_OUTPUT, GPIO_ATTACH_DEFAULT);
-    MCAL_GPIO_InitPin(LCD_PORT, LCD_D5, LCD_PIN_OUTPUT, GPIO_ATTACH_DEFAULT);
-    MCAL_GPIO_InitPin(LCD_PORT, LCD_D6, LCD_PIN_OUTPUT, GPIO_ATTACH_DEFAULT);
-    MCAL_GPIO_InitPin(LCD_PORT, LCD_D7, LCD_PIN_OUTPUT, GPIO_ATTACH_DEFAULT);
-
-    // Initial state: RS = 0, EN = 0
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_RS, LCD_PIN_LOW);
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_EN, LCD_PIN_LOW);
-
-    // Wait for LCD to power up (>15ms after VCC reaches 4.5V)
-    DelayMs(50);
-
-    // Initialization sequence for 4-bit mode
-    // Send 0x03 three times to ensure 8-bit mode is cleared
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_RS, LCD_PIN_LOW);  // Command mode
-
-    LCD_Send4Bits(0x03);
-    DelayMs(5);
-
-    LCD_Send4Bits(0x03);
-    DelayMs(1);
-
-    LCD_Send4Bits(0x03);
-    DelayMs(1);
-
-    // Set to 4-bit mode
-    LCD_Send4Bits(0x02);
-    DelayMs(1);
-
-    // Function set: 4-bit mode, 2 lines, 5x8 font
-    LCD_SendCommand(LCD_4BIT_MODE);
-
-    // Display ON, cursor ON, blink OFF
-    LCD_SendCommand(LCD_CURSOR_ON);
-
-    // Clear display
-    LCD_Clear();
-
-    // Entry mode: increment cursor, no display shift
-    LCD_SendCommand(LCD_ENTRY_MODE);
-}
-
-/*
- * LCD_SendCommand
- * Sends a command to the LCD (RS = 0).
- */
-void LCD_SendCommand(uint8_t command)
-{
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_RS, LCD_PIN_LOW);  /* Command mode */
-
-    // Send upper nibble
-    LCD_Send4Bits(command >> 4);
-
-    // Send lower nibble
-    LCD_Send4Bits(command & 0x0F);
-
-    // Wait for command to execute
-    if (command == LCD_CLEAR || command == LCD_HOME) {
-        DelayMs(2);  /* Clear and home commands take longer */
-    } else {
-        DelayMs(1);
-    }
-}
-
-/*
- * LCD_SendData
- * Sends a data byte to the LCD (RS = 1).
- */
-void LCD_SendData(uint8_t data)
-{
-    MCAL_GPIO_WritePin(LCD_PORT, LCD_RS, LCD_PIN_HIGH);  /* Data mode */
-
-    // Send upper nibble
-    LCD_Send4Bits(data >> 4);
-
-    // Send lower nibble
-    LCD_Send4Bits(data & 0x0F);
-
-    DelayMs(1);  /* Wait for data to be written */
-}
-
-/*
- * LCD_Clear
- * Clears the LCD display and returns cursor to home position.
- */
-void LCD_Clear(void)
-{
-    LCD_SendCommand(LCD_CLEAR);
-    DelayMs(2);  /* Clear command takes longer to execute */
-}
-
-/*
- * LCD_SetCursor
- * Sets the cursor position on the LCD.
- * Parameters: 
- *   row - Row number (0 or 1)
- *   col - Column number (0 to 15)
- */
-void LCD_SetCursor(uint8_t row, uint8_t col)
-{
-    uint8_t address;
+    uint8_t data_packet = 0;
+    uint8_t backlight = 0x08; // 0x08 = Backlight ON
     
-    if (row == 0) {
-        address = LCD_LINE1 + col;
-    } else {
-        address = LCD_LINE2 + col;
+    // Construct packet: Nibble + Backlight + RS + Enable(1)
+    data_packet = (nibble & 0xF0) | backlight | rs_mode | 0x04; 
+    I2C0_WriteByte(LCD_ADDRESS, data_packet);
+    Delay_us(100); // Enable Pulse Width
+
+    // Pulse Enable OFF
+    data_packet = (nibble & 0xF0) | backlight | rs_mode | 0x00;
+    I2C0_WriteByte(LCD_ADDRESS, data_packet);
+    Delay_us(100); // Wait for LCD to process
+}
+
+/* ======================================================= */
+/* HELPER: SEND FULL BYTE (2 Nibbles)                      */
+/* ======================================================= */
+void Lcd_WriteI2C(uint8_t data, uint8_t rs_mode)
+{
+    // 1. Send High Nibble (Bits 4-7)
+    // We pass the data directly; the logic inside Write_Nibble masks it with 0xF0
+    Lcd_Write_Nibble(data, rs_mode);
+
+    // 2. Send Low Nibble (Bits 0-3)
+    // We shift it left so it occupies the 0xF0 position
+    Lcd_Write_Nibble(data << 4, rs_mode);
+}
+
+/* ======================================================= */
+/* COMMANDS & DATA                                         */
+/* ======================================================= */
+void Lcd_SendCommand(uint8_t command)
+{
+    Lcd_WriteI2C(command, 0x00); // RS = 0
+}
+
+void Lcd_DisplayCharacter(uint8_t data)
+{
+    Lcd_WriteI2C(data, 0x01); // RS = 1
+}
+
+void Lcd_DisplayString(char *Str)
+{
+    uint8_t i = 0;
+    while(Str[i] != '\0') {
+        Lcd_DisplayCharacter(Str[i]);
+        i++;
     }
+}
+
+void Lcd_GoToRowColumn(uint8_t row, uint8_t col)
+{
+    uint8_t Address;
+    switch(row) {
+        case 0: Address = 0x00 + col; break;
+        case 1: Address = 0x40 + col; break;
+    }
+    Lcd_SendCommand(Address | 0x80);
+}
+
+void Lcd_Clear(void)
+{
+    Lcd_SendCommand(0x01);
+    Delay_us(2000); // Clear command is SLOW!
+}
+
+/* ======================================================= */
+/* ROBUST INITIALIZATION (The Fix)                         */
+/* ======================================================= */
+void Lcd_Init(void)
+{
+    I2C0_Init();     // Start I2C Bus
+    Delay_us(50000); // Wait >40ms after power up
+
+    // --- STEP 1: RESET SEQUENCE (Send 0x30 three times) ---
+    // Note: We use Write_Nibble, NOT SendCommand.
+    // Sending a full byte here causes "Gibberish" sync errors.
     
-    LCD_SendCommand(address);
-}
+    Lcd_Write_Nibble(0x30, 0); 
+    Delay_us(5000); // Wait >4.1ms
+    
+    Lcd_Write_Nibble(0x30, 0); 
+    Delay_us(200);  // Wait >100us
+    
+    Lcd_Write_Nibble(0x30, 0); 
+    Delay_us(200);
+    
+    // --- STEP 2: SWITCH TO 4-BIT MODE ---
+    Lcd_Write_Nibble(0x20, 0); // Send 0x20 (Set 4-bit)
+    Delay_us(2000);
 
-/*
- * LCD_WriteString
- * Writes a string to the LCD at the current cursor position.
- */
-void LCD_WriteString(const char *str)
-{
-    while (*str != '\0') {
-        LCD_SendData(*str);
-        str++;
-    }
-}
-
-/*
- * LCD_WriteChar
- * Writes a single character to the LCD at the current cursor position.
- */
-void LCD_WriteChar(char c)
-{
-    LCD_SendData(c);
+    // --- STEP 3: CONFIGURE LCD (Now safe to use SendCommand) ---
+    Lcd_SendCommand(0x28); // Function Set: 4-bit, 2 Line, 5x8 Dots
+    Lcd_SendCommand(0x08); // Display OFF
+    Lcd_SendCommand(0x01); // Clear Display
+    Delay_us(2000);        // Clear is slow
+    Lcd_SendCommand(0x06); // Entry Mode: Auto Increment
+    
+    // --- STEP 4: TURN ON DISPLAY ---
+    Lcd_SendCommand(0x0C); // Display ON, Cursor OFF
 }

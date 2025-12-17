@@ -14,7 +14,7 @@
  * Each element represents the character returned for a specific key press.
  * The array is organized as [row][column], matching the physical keypad layout.
  */
-const char keypad_codes[KEYPAD_ROWS][KEYPAD_COLS] = {
+const uint8_t keypad_codes[KEYPAD_ROWS][KEYPAD_COLS] = {
     {'1', '2', '3', 'A'},
     {'4', '5', '6', 'B'},
     {'7', '8', '9', 'C'},
@@ -80,7 +80,7 @@ void HAL_Keypad_Init(void) {
  *   3. Wait for key release (debounce).
  *   4. Return the mapped character from keypad_codes.
  */
-char HAL_Keypad_GetKey(void) {
+uint8_t HAL_Keypad_GetKey(void) {
     uint8_t row_state;
     
     /* Scan each column */

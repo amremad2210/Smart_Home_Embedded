@@ -8,4 +8,4 @@ void RGB_LED_SetColor(uint8_t red, uint8_t green, uint8_t blue);
 void RGB_LED_On(void);
 void RGB_LED_Off(void);
 
-#endif
+#endif /* HAL_RGB_LED_H_ */
