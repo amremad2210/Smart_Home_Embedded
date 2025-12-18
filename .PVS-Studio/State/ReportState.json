@@ -1,0 +1,354 @@
+{
+  "json": [
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_gpt.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3728291735
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_uart.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 4294855532
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_gpio.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3907627309
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_eeprom.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 1270290142
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_pwm.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3736805234
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_adc.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3722376780
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\CONTROL_WS\\src\\hal\\hal_buzzer.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 2598341725
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\CONTROL_WS\\src\\hal\\hal_comm.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3149409193
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_i2c.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3728275398
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\CONTROL_WS\\startup_ewarm.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3470719330
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\Common\\src\\mcal\\mcal_systick.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 105218454
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\CONTROL_WS\\src\\hal\\hal_motor.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 3434094722
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\CONTROL_WS\\src\\hal\\hal_eeprom.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 1923261853
+    },
+    {
+      "code": "V009",
+      "message": "To use free version of PVS-Studio, source code files are required to start with a special comment.",
+      "falseAlarm": false,
+      "level": 0,
+      "positions": [
+        {
+          "column": 1,
+          "endColumn": 1,
+          "line": 1,
+          "endLine": 1,
+          "file": "D:\\Andreww\\Engineering\\CESS\\Fall 25\\Intro to Embedded Sys\\Project\\Smart_Home_Embedded\\CONTROL_WS\\main.c",
+          "navigation": {
+            "previousLine": 0,
+            "currentLine": 0,
+            "nextLine": 0,
+            "columns": 0
+          }
+        }
+      ],
+      "cwe": 0,
+      "sastId": "",
+      "projects": [],
+      "id": 854498953
+    }
+  ]
+}
