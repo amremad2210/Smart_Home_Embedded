@@ -20,7 +20,7 @@
 #include "hal/hal_comm.h"
 
 #define PASSWORD_MAX_LENGTH     16U  /* Maximum password length (matches EEPROM HAL) */
-#define PASSWORD_MIN_LENGTH     4U   /* Minimum password length (matches EEPROM HAL) */
+#define PASSWORD_MIN_LENGTH     5U   /* Minimum password length (matches EEPROM HAL) */
 #define TIMEOUT_MIN_SECONDS     5U
 #define TIMEOUT_MAX_SECONDS     30U
 #define TIMEOUT_DEFAULT_SECONDS 15U  /* Default timeout if not set */
@@ -280,7 +280,7 @@ static void Handle_SetupPassword(void)
         /* Validate length */
         if (len1 < PASSWORD_MIN_LENGTH)
         {
-            HMI_ShowMessage("Too Short!", "Min 4 digits", 1500U);
+            HMI_ShowMessage("Too Short!", "Min 5 digits", 1500U);
             continue;
         }
 
@@ -445,7 +445,7 @@ static void Handle_ChangePassword(void)
     /* Validate new password length */
     if (newLen < PASSWORD_MIN_LENGTH)
     {
-        HMI_ShowMessage("Too Short!", "Min 4 digits", 1500U);
+        HMI_ShowMessage("Too Short!", "Min 5 digits", 1500U);
         return;
     }
 
