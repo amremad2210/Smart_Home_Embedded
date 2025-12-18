@@ -31,12 +31,12 @@ void BUZZER_setState(uint8_t state)
     if (state == BUZZER_ON)
     {
         /* Write HIGH to the defined Port/Pin */
-        MCAL_GPIO_WritePin(BUZZER_PORT_BASE, BUZZER_PIN, BUZZER_PIN);
+        MCAL_GPIO_WritePin(BUZZER_PORT_BASE, BUZZER_PIN, LOGIC_HIGH);
     }
     else
     {
         /* Write LOW (0) to the defined Port/Pin */
-        MCAL_GPIO_WritePin(BUZZER_PORT_BASE, BUZZER_PIN, 0x00);
+        MCAL_GPIO_WritePin(BUZZER_PORT_BASE, BUZZER_PIN, LOGIC_LOW);
     }
 }
 
