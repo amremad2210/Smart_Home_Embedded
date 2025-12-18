@@ -7,12 +7,6 @@
 // I2C Address (Try 0x27 first, if that fails try 0x3F)
 #define LCD_ADDRESS   0x27
 
-// Helper Delay (Timing is critical for Init!)
-void Delay_us(uint32_t n) {
-    uint32_t i, j;
-    for(i=0; i<n; i++) for(j=0; j<3; j++);
-}
-
 /* ======================================================= */
 /* HELPER: SEND ONLY 4 BITS (Used for Init Sync)           */
 /* ======================================================= */
@@ -24,12 +18,12 @@ void Lcd_Write_Nibble(uint8_t nibble, uint8_t rs_mode)
     // Construct packet: Nibble + Backlight + RS + Enable(1)
     data_packet = (nibble & 0xF0) | backlight | rs_mode | 0x04; 
     I2C0_WriteByte(LCD_ADDRESS, data_packet);
-    Delay_us(100); // Enable Pulse Width
+    MCAL_SysTick_DelayUs(100); // Enable Pulse Width
 
     // Pulse Enable OFF
     data_packet = (nibble & 0xF0) | backlight | rs_mode | 0x00;
     I2C0_WriteByte(LCD_ADDRESS, data_packet);
-    Delay_us(100); // Wait for LCD to process
+    MCAL_SysTick_DelayUs(100); // Wait for LCD to process
 }
 
 /* ======================================================= */
@@ -81,7 +75,7 @@ void Lcd_GoToRowColumn(uint8_t row, uint8_t col)
 void Lcd_Clear(void)
 {
     Lcd_SendCommand(0x01);
-    Delay_us(2000); // Clear command is SLOW!
+    MCAL_SysTick_DelayUs(2000); // Clear command is SLOW!
 }
 
 /* ======================================================= */
@@ -90,30 +84,30 @@ void Lcd_Clear(void)
 void Lcd_Init(void)
 {
     I2C0_Init();     // Start I2C Bus
-    Delay_us(50000); // Wait >40ms after power up
+    MCAL_SysTick_DelayMs(50); // Wait >40ms after power up
 
     // --- STEP 1: RESET SEQUENCE (Send 0x30 three times) ---
     // Note: We use Write_Nibble, NOT SendCommand.
     // Sending a full byte here causes "Gibberish" sync errors.
     
     Lcd_Write_Nibble(0x30, 0); 
-    Delay_us(5000); // Wait >4.1ms
+    MCAL_SysTick_DelayUs(5000); // Wait >4.1ms
     
     Lcd_Write_Nibble(0x30, 0); 
-    Delay_us(200);  // Wait >100us
+    MCAL_SysTick_DelayUs(200);  // Wait >100us
     
     Lcd_Write_Nibble(0x30, 0); 
-    Delay_us(200);
+    MCAL_SysTick_DelayUs(200);
     
     // --- STEP 2: SWITCH TO 4-BIT MODE ---
     Lcd_Write_Nibble(0x20, 0); // Send 0x20 (Set 4-bit)
-    Delay_us(2000);
+    MCAL_SysTick_DelayUs(2000);
 
     // --- STEP 3: CONFIGURE LCD (Now safe to use SendCommand) ---
     Lcd_SendCommand(0x28); // Function Set: 4-bit, 2 Line, 5x8 Dots
     Lcd_SendCommand(0x08); // Display OFF
     Lcd_SendCommand(0x01); // Clear Display
-    Delay_us(2000);        // Clear is slow
+    MCAL_SysTick_DelayUs(2000);        // Clear is slow
     Lcd_SendCommand(0x06); // Entry Mode: Auto Increment
     
     // --- STEP 4: TURN ON DISPLAY ---

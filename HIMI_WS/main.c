@@ -66,6 +66,7 @@ int main(void)
 
     HMI_Init();
     HMI_WaitForReady();
+    
 
     /* Check if password needs to be set for the first time */
     Handle_SetupPassword();
@@ -95,7 +96,7 @@ int main(void)
         }
     }
 
-    return 0;
+   // return 0;
 }
 
 /*======================================================================

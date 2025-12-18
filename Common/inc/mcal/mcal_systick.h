@@ -56,6 +56,16 @@ uint32_t MCAL_SysTick_GetTickMs(void);
 void MCAL_SysTick_DelayMs(uint32_t ms);
 
 /**
+ * @brief Blocking delay in microseconds using busy-wait.
+ *
+ * Uses CPU clock cycles for precise short delays.
+ * Accurate for delays >= 1us on systems with >= 16 MHz clock.
+ *
+ * @param us  Number of microseconds to wait.
+ */
+void MCAL_SysTick_DelayUs(uint32_t us);
+
+/**
  * @brief Get the system clock in Hz as used by SysTick.
  *
  * @return System clock in Hz.
