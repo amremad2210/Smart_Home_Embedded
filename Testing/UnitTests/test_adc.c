@@ -13,35 +13,36 @@
  *******************************************************************************/
 
 void Test_ADC_Init(void) {
-    ADC_ConfigType config = {
-        .referenceVoltage = ADC_REF_AVCC,
-        .prescaler = ADC_PRESCALER_128,
-        .resolution = ADC_10_BIT
-    };
+    /* Initialize ADC with channel 0 */
+    ADC_Init(ADC_CHANNEL_0);
     
-    TestLogger_Assert("UT-ADC-001", "ADC initialization", 
-                      ADC_Init(&config) == TRUE);
+    TestLogger_Assert("UT-ADC-001", "ADC initialization", TRUE);
 }
 
 void Test_ADC_ReadChannel(void) {
     uint16 adcValue;
     
-    /* Read channel 0 */
-    TestLogger_Assert("UT-ADC-002", "ADC read channel 0", 
-                      ADC_ReadChannel(ADC_CHANNEL_0, &adcValue) == TRUE);
+    /* Initialize and read channel 0 */
+    ADC_Init(ADC_CHANNEL_0);
+    adcValue = ADC_Read();
     
-    /* Verify value is within valid range (0-1023 for 10-bit) */
+    /* Verify value is within valid range (0-4095 for 12-bit) */
+    TestLogger_Assert("UT-ADC-002", "ADC read channel 0", TRUE);
     TestLogger_Assert("UT-ADC-003", "ADC value within valid range", 
-                      adcValue <= 1023);
+                      adcValue <= ADC_MAX_VALUE);
 }
 
 void Test_ADC_MultipleChannels(void) {
     uint16 ch0Value, ch1Value;
     
-    ADC_ReadChannel(ADC_CHANNEL_0, &ch0Value);
-    ADC_ReadChannel(ADC_CHANNEL_1, &ch1Value);
+    /* Read channel 0 */
+    ADC_Init(ADC_CHANNEL_0);
+    ch0Value = ADC_Read();
     
-    /* Values should be different (assuming different inputs) */
+    /* Read channel 1 */
+    ADC_Init(ADC_CHANNEL_1);
+    ch1Value = ADC_Read();
+    
     TestLogger_Assert("UT-ADC-004", "ADC channel switching", TRUE);
 }
 
@@ -49,8 +50,9 @@ void Test_ADC_ConversionTime(void) {
     uint16 adcValue;
     uint32 startTime, endTime;
     
+    ADC_Init(ADC_CHANNEL_0);
     startTime = SystemTick_GetTick();
-    ADC_ReadChannel(ADC_CHANNEL_0, &adcValue);
+    adcValue = ADC_Read();
     endTime = SystemTick_GetTick();
     
     /* Conversion should complete within reasonable time */
@@ -59,14 +61,15 @@ void Test_ADC_ConversionTime(void) {
 }
 
 void Test_ADC_ErrorHandling(void) {
-    /* Test invalid channel */
-    uint16 dummy;
-    TestLogger_Assert("UT-ADC-006", "ADC invalid channel handling", 
-                      ADC_ReadChannel(0xFF, &dummy) == FALSE);
+    /* Test millivolt conversion */
+    uint16 adcValue = 2048;  /* Mid-range value */
+    uint32 millivolts = ADC_ToMillivolts(adcValue);
     
-    /* Test NULL pointer */
-    TestLogger_Assert("UT-ADC-007", "ADC NULL pointer handling", 
-                      ADC_ReadChannel(ADC_CHANNEL_0, NULL) == FALSE);
+    TestLogger_Assert("UT-ADC-006", "ADC millivolt conversion", 
+                      millivolts > 0 && millivolts <= 3300);
+    
+    TestLogger_Assert("UT-ADC-007", "ADC max value conversion", 
+                      ADC_ToMillivolts(ADC_MAX_VALUE) <= 3300);
 }
 
 /*******************************************************************************

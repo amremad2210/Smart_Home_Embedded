@@ -28,7 +28,7 @@ void Test_Buzzer_WrongPasswordBeep(void) {
     /* Simulate wrong password entry */
     g_failedAttempts++;
     
-    Buzzer_Beep(200);  /* Short beep for wrong password */
+    BUZZER_beep(200);  /* Short beep for wrong password */
     
     TestLogger_Assert("IT-BUZZER-001", "Buzzer wrong password feedback", 
                       g_failedAttempts == 1);
@@ -40,12 +40,12 @@ void Test_Buzzer_MultipleFailures(void) {
     
     /* Attempt 1 */
     g_failedAttempts++;
-    Buzzer_Beep(200);
+    BUZZER_beep(200);
     for (volatile int i = 0; i < 50000; i++);
     
     /* Attempt 2 */
     g_failedAttempts++;
-    Buzzer_Beep(200);
+    BUZZER_beep(200);
     for (volatile int i = 0; i < 50000; i++);
     
     /* Attempt 3 - Should trigger lockout */
@@ -64,7 +64,7 @@ void Test_Buzzer_LockoutActivation(void) {
     if (g_failedAttempts >= MAX_PASSWORD_ATTEMPTS) {
         g_isLocked = TRUE;
         g_lockoutStartTime = SystemTick_GetTick();
-        Buzzer_LockoutSignal();  /* Long continuous alarm */
+        BUZZER_beep(3000);  /* Long beep for lockout */
     }
     
     TestLogger_Assert("IT-BUZZER-003", "Buzzer lockout activation", 
@@ -78,8 +78,8 @@ void Test_Buzzer_LockoutDuration(void) {
     g_isLocked = TRUE;
     g_lockoutStartTime = SystemTick_GetTick();
     
-    /* Buzzer should stay on for 60 seconds */
-    Buzzer_On();
+    /* Buzzer should stay on for duration */
+    BUZZER_setState(BUZZER_ON);
     
     /* Wait for lockout duration (simulated short for testing) */
     uint32 testDuration = 5000;  /* 5 seconds for test */
@@ -87,7 +87,7 @@ void Test_Buzzer_LockoutDuration(void) {
         /* Buzzer should remain on */
     }
     
-    Buzzer_Off();
+    BUZZER_setState(BUZZER_OFF);
     elapsedTime = SystemTick_GetTick() - g_lockoutStartTime;
     
     TestLogger_Assert("IT-BUZZER-004", "Buzzer lockout duration control", 

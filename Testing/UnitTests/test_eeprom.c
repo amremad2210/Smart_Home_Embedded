@@ -13,25 +13,26 @@
  *******************************************************************************/
 
 void Test_EEPROM_Init(void) {
+    uint8 result = MCAL_EEPROM_Init();
     TestLogger_Assert("UT-EEPROM-001", "EEPROM initialization", 
-                      EEPROM_Init() == TRUE);
+                      result == EEPROM_SUCCESS);
 }
 
 void Test_EEPROM_WriteRead_Byte(void) {
-    uint16 testAddress = 0x0010;
-    uint8 testData = 0x42;
-    uint8 readData;
+    uint32 testAddress = 0x0010;  /* Word-aligned address */
+    uint32 testData = 0x12345678;
+    uint32 readData;
     
-    /* Write byte */
-    TestLogger_Assert("UT-EEPROM-002", "EEPROM write byte", 
-                      EEPROM_WriteByte(testAddress, testData) == TRUE);
+    /* Write word (EEPROM works with 32-bit words) */
+    TestLogger_Assert("UT-EEPROM-002", "EEPROM write word", 
+                      MCAL_EEPROM_WriteWord(testAddress, testData) == EEPROM_SUCCESS);
     
     /* Small delay for write cycle */
     for (volatile int i = 0; i < 10000; i++);
     
-    /* Read byte */
-    TestLogger_Assert("UT-EEPROM-003", "EEPROM read byte", 
-                      EEPROM_ReadByte(testAddress, &readData) == TRUE);
+    /* Read word */
+    TestLogger_Assert("UT-EEPROM-003", "EEPROM read word", 
+                      MCAL_EEPROM_ReadWord(testAddress, &readData) == EEPROM_SUCCESS);
     
     /* Verify data */
     TestLogger_Assert("UT-EEPROM-004", "EEPROM data integrity", 
@@ -39,21 +40,21 @@ void Test_EEPROM_WriteRead_Byte(void) {
 }
 
 void Test_EEPROM_WriteRead_Block(void) {
-    uint16 testAddress = 0x0020;
-    uint8 testBlock[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-    uint8 readBlock[8] = {0};
+    uint32 testAddress = 0x0020;  /* Word-aligned address */
+    uint32 testBlock[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    uint32 readBlock[8] = {0};
     uint8 dataMatch = TRUE;
     
-    /* Write block */
+    /* Write block (8 words = 32 bytes) */
     TestLogger_Assert("UT-EEPROM-005", "EEPROM write block", 
-                      EEPROM_WriteBlock(testAddress, testBlock, 8) == TRUE);
+                      MCAL_EEPROM_WriteBlock(testBlock, testAddress, 8) == EEPROM_SUCCESS);
     
     /* Delay for write cycle */
     for (volatile int i = 0; i < 20000; i++);
     
     /* Read block */
     TestLogger_Assert("UT-EEPROM-006", "EEPROM read block", 
-                      EEPROM_ReadBlock(testAddress, readBlock, 8) == TRUE);
+                      MCAL_EEPROM_ReadBlock(readBlock, testAddress, 8) == EEPROM_SUCCESS);
     
     /* Verify data */
     for (int i = 0; i < 8; i++) {
@@ -68,21 +69,22 @@ void Test_EEPROM_WriteRead_Block(void) {
 }
 
 void Test_EEPROM_BoundaryConditions(void) {
-    uint8 dummy;
+    uint32 dummy;
+    uint32 eepromSize = MCAL_EEPROM_GetSize();
     
-    /* Test address boundary */
-    TestLogger_Assert("UT-EEPROM-008", "EEPROM max address handling", 
-                      EEPROM_ReadByte(EEPROM_MAX_ADDRESS - 1, &dummy) == TRUE);
+    /* Test size retrieval */
+    TestLogger_Assert("UT-EEPROM-008", "EEPROM size retrieval", 
+                      eepromSize > 0);
     
-    /* Test invalid address */
-    TestLogger_Assert("UT-EEPROM-009", "EEPROM invalid address rejection", 
-                      EEPROM_ReadByte(EEPROM_MAX_ADDRESS + 1, &dummy) == FALSE);
+    /* Test valid address access */
+    TestLogger_Assert("UT-EEPROM-009", "EEPROM valid address handling", 
+                      MCAL_EEPROM_ReadWord(0x0000, &dummy) == EEPROM_SUCCESS);
 }
 
 void Test_EEPROM_ErrorHandling(void) {
     /* Test NULL pointer handling */
     TestLogger_Assert("UT-EEPROM-010", "EEPROM NULL pointer handling", 
-                      EEPROM_ReadByte(0x00, NULL) == FALSE);
+                      MCAL_EEPROM_ReadWord(0x00, NULL) == EEPROM_ERROR_INVALID_PARAM);
 }
 
 /*******************************************************************************

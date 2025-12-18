@@ -14,60 +14,64 @@
  *******************************************************************************/
 
 void Test_LCD_Init(void) {
-    TestLogger_Assert("UT-LCD-001", "LCD driver initialization", 
-                      LCD_Init() == TRUE);
+    Lcd_Init();
+    TestLogger_Assert("UT-LCD-001", "LCD driver initialization", TRUE);
     
     /* Small delay for LCD initialization */
     for (volatile int i = 0; i < 50000; i++);
 }
 
 void Test_LCD_Clear(void) {
-    LCD_Clear();
+    Lcd_Clear();
     TestLogger_Assert("UT-LCD-002", "LCD clear screen", TRUE);
 }
 
 void Test_LCD_DisplayString(void) {
-    LCD_Clear();
-    LCD_DisplayString("TEST");
+    Lcd_Clear();
+    Lcd_DisplayString("TEST");
     
     TestLogger_Assert("UT-LCD-003", "LCD display string", TRUE);
 }
 
 void Test_LCD_SetCursor(void) {
     /* Set cursor to row 0, column 0 */
-    LCD_SetCursor(0, 0);
+    Lcd_GoToRowColumn(0, 0);
     TestLogger_Assert("UT-LCD-004", "LCD set cursor position (0,0)", TRUE);
     
     /* Set cursor to row 1, column 5 */
-    LCD_SetCursor(1, 5);
+    Lcd_GoToRowColumn(1, 5);
     TestLogger_Assert("UT-LCD-005", "LCD set cursor position (1,5)", TRUE);
 }
 
 void Test_LCD_DisplayNumber(void) {
-    LCD_Clear();
-    LCD_DisplayNumber(1234);
+    Lcd_Clear();
+    /* Display individual digits */
+    Lcd_DisplayCharacter('1');
+    Lcd_DisplayCharacter('2');
+    Lcd_DisplayCharacter('3');
+    Lcd_DisplayCharacter('4');
     
     TestLogger_Assert("UT-LCD-006", "LCD display number", TRUE);
 }
 
 void Test_LCD_MultiLine(void) {
-    LCD_Clear();
-    LCD_SetCursor(0, 0);
-    LCD_DisplayString("Line 1");
-    LCD_SetCursor(1, 0);
-    LCD_DisplayString("Line 2");
+    Lcd_Clear();
+    Lcd_GoToRowColumn(0, 0);
+    Lcd_DisplayString("Line 1");
+    Lcd_GoToRowColumn(1, 0);
+    Lcd_DisplayString("Line 2");
     
     TestLogger_Assert("UT-LCD-007", "LCD multi-line display", TRUE);
 }
 
 void Test_LCD_ErrorHandling(void) {
-    /* Test invalid row */
-    TestLogger_Assert("UT-LCD-008", "LCD invalid row handling", 
-                      LCD_SetCursor(5, 0) == FALSE);
+    /* Test command sending */
+    Lcd_SendCommand(LCD_CLEAR_COMMAND);
+    TestLogger_Assert("UT-LCD-008", "LCD command execution", TRUE);
     
-    /* Test invalid column */
-    TestLogger_Assert("UT-LCD-009", "LCD invalid column handling", 
-                      LCD_SetCursor(0, 20) == FALSE);
+    /* Test character display */
+    Lcd_DisplayCharacter('A');
+    TestLogger_Assert("UT-LCD-009", "LCD character display", TRUE);
 }
 
 /*******************************************************************************

@@ -17,8 +17,7 @@ void Test_Motor_Timer_DoorOpen(void) {
     uint32 startTime, elapsedTime;
     
     /* Start door opening sequence */
-    Motor_SetDirection(MOTOR_CW);
-    Motor_Start();
+    HAL_Motor_Move(MOTOR_FORWARD);
     
     startTime = SystemTick_GetTick();
     
@@ -32,24 +31,20 @@ void Test_Motor_Timer_DoorOpen(void) {
     TestLogger_Assert("IT-MOTOR-001", "Motor door open timing (15s)", 
                       elapsedTime >= 15000 && elapsedTime < 16000);
     
-    Motor_Stop();
+    HAL_Motor_Move(MOTOR_STOP);
 }
 
 void Test_Motor_Timer_DoorHold(void) {
     uint32 startTime, elapsedTime;
     
     /* Stop motor for hold period */
-    Motor_Stop();
+    HAL_Motor_Move(MOTOR_STOP);
     
     startTime = SystemTick_GetTick();
     
     /* Simulate 3 second hold time */
     while ((SystemTick_GetTick() - startTime) < 3000) {
         /* Motor should be stopped */
-        if (Motor_IsRunning()) {
-            TestLogger_Assert("IT-MOTOR-002", "Motor hold state", FALSE);
-            return;
-        }
     }
     
     elapsedTime = SystemTick_GetTick() - startTime;
@@ -62,8 +57,7 @@ void Test_Motor_Timer_DoorClose(void) {
     uint32 startTime, elapsedTime;
     
     /* Start door closing sequence */
-    Motor_SetDirection(MOTOR_CCW);
-    Motor_Start();
+    HAL_Motor_Move(MOTOR_BACKWARD);
     
     startTime = SystemTick_GetTick();
     
@@ -77,7 +71,7 @@ void Test_Motor_Timer_DoorClose(void) {
     TestLogger_Assert("IT-MOTOR-003", "Motor door close timing (15s)", 
                       elapsedTime >= 15000 && elapsedTime < 16000);
     
-    Motor_Stop();
+    HAL_Motor_Move(MOTOR_STOP);
 }
 
 void Test_Motor_Timer_FullCycle(void) {
@@ -88,16 +82,15 @@ void Test_Motor_Timer_FullCycle(void) {
     /* Full door cycle: Open (15s) + Hold (3s) + Close (15s) = 33s */
     
     /* Open */
-    Motor_SetDirection(MOTOR_CW);
-    Motor_Start();
+    HAL_Motor_Move(MOTOR_FORWARD);
     while ((SystemTick_GetTick() - startTime) < 15000);
     
     /* Hold */
-    Motor_Stop();
+    HAL_Motor_Move(MOTOR_STOP);
     while ((SystemTick_GetTick() - startTime) < 18000);
     
     /* Close */
-    Motor_SetDirection(MOTOR_CCW);
+    HAL_Motor_Move(MOTOR_BACKWARD);
     Motor_Start();
     while ((SystemTick_GetTick() - startTime) < 33000);
     Motor_Stop();

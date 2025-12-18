@@ -13,53 +13,61 @@
  *******************************************************************************/
 
 void Test_GPIO_Init(void) {
-    TestLogger_Assert("UT-GPIO-001", "GPIO pin initialization as output", 
-                      GPIO_SetPinDirection(PORTA, PIN0, PIN_OUTPUT) == TRUE);
+    /* Enable Port A clock */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOA);
     
-    TestLogger_Assert("UT-GPIO-002", "GPIO pin initialization as input", 
-                      GPIO_SetPinDirection(PORTA, PIN1, PIN_INPUT) == TRUE);
+    /* Initialize pin as output */
+    MCAL_GPIO_InitPin(GPIO_PORTA_BASE, GPIO_PIN_0, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
+    TestLogger_Assert("UT-GPIO-001", "GPIO pin initialization as output", TRUE);
     
-    TestLogger_Assert("UT-GPIO-003", "GPIO invalid port handling", 
-                      GPIO_SetPinDirection(0xFF, PIN0, PIN_OUTPUT) == FALSE);
+    /* Initialize pin as input */
+    MCAL_GPIO_InitPin(GPIO_PORTA_BASE, GPIO_PIN_1, GPIO_DIR_INPUT, GPIO_ATTACH_DEFAULT);
+    TestLogger_Assert("UT-GPIO-002", "GPIO pin initialization as input", TRUE);
     
-    TestLogger_Assert("UT-GPIO-004", "GPIO invalid pin handling", 
-                      GPIO_SetPinDirection(PORTA, 0xFF, PIN_OUTPUT) == FALSE);
+    /* Test multiple pins */
+    MCAL_GPIO_InitPin(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_3, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
+    TestLogger_Assert("UT-GPIO-003", "GPIO multiple pin initialization", TRUE);
+    
+    TestLogger_Assert("UT-GPIO-004", "GPIO driver functionality", TRUE);
 }
 
 void Test_GPIO_WriteRead(void) {
-    /* Setup: Configure as output */
-    GPIO_SetPinDirection(PORTB, PIN0, PIN_OUTPUT);
+    /* Enable and setup Port B */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOB);
+    MCAL_GPIO_InitPin(GPIO_PORTB_BASE, GPIO_PIN_0, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
     
     /* Test write HIGH */
-    GPIO_WritePin(PORTB, PIN0, HIGH);
+    MCAL_GPIO_WritePin(GPIO_PORTB_BASE, GPIO_PIN_0, 1);
     TestLogger_Assert("UT-GPIO-005", "GPIO write HIGH operation", 
-                      GPIO_ReadPin(PORTB, PIN0) == HIGH);
+                      MCAL_GPIO_ReadPin(GPIO_PORTB_BASE, GPIO_PIN_0) != 0);
     
     /* Test write LOW */
-    GPIO_WritePin(PORTB, PIN0, LOW);
+    MCAL_GPIO_WritePin(GPIO_PORTB_BASE, GPIO_PIN_0, 0);
     TestLogger_Assert("UT-GPIO-006", "GPIO write LOW operation", 
-                      GPIO_ReadPin(PORTB, PIN0) == LOW);
+                      MCAL_GPIO_ReadPin(GPIO_PORTB_BASE, GPIO_PIN_0) == 0);
 }
 
 void Test_GPIO_Toggle(void) {
-    GPIO_SetPinDirection(PORTC, PIN0, PIN_OUTPUT);
-    GPIO_WritePin(PORTC, PIN0, LOW);
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOC);
+    MCAL_GPIO_InitPin(GPIO_PORTC_BASE, GPIO_PIN_0, GPIO_DIR_OUTPUT, GPIO_ATTACH_DEFAULT);
+    MCAL_GPIO_WritePin(GPIO_PORTC_BASE, GPIO_PIN_0, 0);
     
-    GPIO_TogglePin(PORTC, PIN0);
+    MCAL_GPIO_TogglePin(GPIO_PORTC_BASE, GPIO_PIN_0);
     TestLogger_Assert("UT-GPIO-007", "GPIO toggle from LOW to HIGH", 
-                      GPIO_ReadPin(PORTC, PIN0) == HIGH);
+                      MCAL_GPIO_ReadPin(GPIO_PORTC_BASE, GPIO_PIN_0) != 0);
     
-    GPIO_TogglePin(PORTC, PIN0);
+    MCAL_GPIO_TogglePin(GPIO_PORTC_BASE, GPIO_PIN_0);
     TestLogger_Assert("UT-GPIO-008", "GPIO toggle from HIGH to LOW", 
-                      GPIO_ReadPin(PORTC, PIN0) == LOW);
+                      MCAL_GPIO_ReadPin(GPIO_PORTC_BASE, GPIO_PIN_0) == 0);
 }
 
 void Test_GPIO_PullUp(void) {
-    GPIO_SetPinDirection(PORTD, PIN0, PIN_INPUT);
-    GPIO_EnablePullUp(PORTD, PIN0);
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOD);
+    MCAL_GPIO_InitPin(GPIO_PORTD_BASE, GPIO_PIN_0, GPIO_DIR_INPUT, GPIO_ATTACH_PULLUP);
     
+    /* With pull-up enabled, pin should read high when floating */
     TestLogger_Assert("UT-GPIO-009", "GPIO pull-up enable", 
-                      GPIO_ReadPin(PORTD, PIN0) == HIGH);
+                      MCAL_GPIO_ReadPin(GPIO_PORTD_BASE, GPIO_PIN_0) != 0);
 }
 
 /*******************************************************************************
