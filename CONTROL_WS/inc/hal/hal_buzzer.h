@@ -22,9 +22,9 @@
  * NOTE: You need both the Peripheral ID (for clock) and Port Base (for IO)
  */
 /* Hardware wiring: Buzzer is connected to PE4 */
-#define BUZZER_PERIPH       SYSCTL_PERIPH_GPIOE
-#define BUZZER_PORT_BASE    GPIO_PORTE_BASE
-#define BUZZER_PIN          GPIO_PIN_4
+#define BUZZER_PERIPH       SYSCTL_PERIPH_GPIOD
+#define BUZZER_PORT_BASE    GPIO_PORTD_BASE
+#define BUZZER_PIN          GPIO_PIN_1
 
 /* Buzzer States */
 #define BUZZER_ON   1
