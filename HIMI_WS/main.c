@@ -122,6 +122,10 @@ static void HMI_WaitForReady(void)
                 Lcd_Clear();
                 Lcd_DisplayString("Control Ready");
                 MCAL_SysTick_DelayMs(800U);
+                
+                /* Receive current timeout value from Control ECU */
+                g_currentTimeout = HAL_COMM_ReceiveByte();
+                
                 return;
             }
         }

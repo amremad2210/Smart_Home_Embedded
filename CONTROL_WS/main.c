@@ -129,18 +129,23 @@ int main(void)
         //     /* System cannot function without EEPROM */
         // }
     }
+
+    HAL_EEPROM_ClearPassword();
     
     /* Load timeout value from EEPROM */
     currentTimeout = EEPROM_ReadTimeout();
-    // if (currentTimeout < TIMEOUT_MIN_SECONDS || currentTimeout > TIMEOUT_MAX_SECONDS)
-    // {
-    //     /* Invalid timeout, use default */
-    //     currentTimeout = TIMEOUT_DEFAULT_SECONDS;
-    //     EEPROM_StoreTimeout(currentTimeout);
-    // }
+    if (currentTimeout < TIMEOUT_MIN_SECONDS || currentTimeout > TIMEOUT_MAX_SECONDS)
+    {
+        /* Invalid timeout, use default */
+        currentTimeout = TIMEOUT_DEFAULT_SECONDS;
+        EEPROM_StoreTimeout(currentTimeout);
+    }
     
     /* Send ready signal to HMI */
     HAL_COMM_SendByte(CMD_READY);
+    
+    /* Send current timeout value to HMI */
+    HAL_COMM_SendByte((uint8_t)currentTimeout);
     
     /* Main application loop */
     while(1)
@@ -725,24 +730,30 @@ static void ActivateLockout(void)
  */
 static void OpenDoorSequence(uint32_t timeoutSeconds)
 {
+    /* Safety check: ensure timeout is valid */
+    if (timeoutSeconds < TIMEOUT_MIN_SECONDS || timeoutSeconds > TIMEOUT_MAX_SECONDS)
+    {
+        timeoutSeconds = TIMEOUT_DEFAULT_SECONDS;
+    }
+    
     /* 1. Unlock door (motor forward) */
     HAL_Motor_Move(MOTOR_FORWARD);
     
-    /* 2. Wait for bolt to retract (2 seconds) */
+    /* 2. Wait for bolt to fully retract (2 seconds) */
     MCAL_SysTick_DelayMs(2000U);
     
-    /* 3. Stop motor (hold position) */
+    /* 3. Stop motor (door is now unlocked) */
     HAL_Motor_Move(MOTOR_STOP);
     
-    /* 4. Wait for timeout period (user can enter) */
+    /* 4. Wait for timeout period (door stays open, user can enter) */
     MCAL_SysTick_DelayMs(timeoutSeconds * 1000U);
     
     /* 5. Lock door (motor backward) */
     HAL_Motor_Move(MOTOR_BACKWARD);
     
-    /* 6. Wait for bolt to extend (2 seconds) */
+    /* 6. Wait for bolt to fully extend (2 seconds) */
     MCAL_SysTick_DelayMs(2000U);
     
-    /* 7. Stop motor */
+    /* 7. Stop motor (door is now locked) */
     HAL_Motor_Move(MOTOR_STOP);
 }
