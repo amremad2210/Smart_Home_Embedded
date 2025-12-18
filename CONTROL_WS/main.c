@@ -120,6 +120,7 @@ int main(void)
     
     /* Initialize EEPROM */
     eepromResult = HAL_EEPROM_Init();
+    HAL_EEPROM_ClearPassword();
     if (eepromResult != HAL_EEPROM_SUCCESS)
     {
         /* EEPROM initialization failed - indicate error with red LED */
