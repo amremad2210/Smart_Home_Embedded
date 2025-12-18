@@ -42,6 +42,9 @@ static uint8_t g_currentTimeout = TIMEOUT_DEFAULT_SECONDS;
 #define RESP_LOCKOUT            'L'
 #define RESP_READY              'R'
 
+/* Lockout behavior */
+#define LOCKOUT_WAIT_SECONDS    10U
+
 /* Helper prototypes */
 static void HMI_Init(void);
 static void HMI_WaitForReady(void);
@@ -50,6 +53,7 @@ static uint8_t HMI_ReadPasswordUntilHash(char *buf, uint8_t maxLen);
 static uint8_t HMI_ReadTimeoutFromPot(void);
 static uint8_t HMI_WaitResponse(void);
 static void HMI_ShowMessage(const char *line1, const char *line2, uint32_t delayMs);
+static void HMI_HandleLockout(void);
 
 static void Handle_SetupPassword(void);
 static void Handle_OpenDoor(void);
@@ -72,21 +76,21 @@ int main(void)
         /* Show main menu */
         Lcd_Clear();
         Lcd_GoToRowColumn(0, 0);
-        Lcd_DisplayString("+Open  -Change");
+        Lcd_DisplayString("A)Open  B)Change");
         Lcd_GoToRowColumn(1, 0);
-        Lcd_DisplayString("*Timeout");
+        Lcd_DisplayString("C)Timeout");
 
         char key = HMI_WaitKey();
 
-        if (key == '+')
+        if (key == 'A')
         {
             Handle_OpenDoor();
         }
-        else if (key == '-')
+        else if (key == 'B')
         {
             Handle_ChangePassword();
         }
-        else if (key == '*')
+        else if (key == 'C')
         {
             Handle_SetTimeout();
         }
@@ -123,6 +127,8 @@ static void HMI_WaitForReady(void)
                 Lcd_Clear();
                 Lcd_DisplayString("Control Ready");
                 MCAL_SysTick_DelayMs(800U);
+
+                g_currentTimeout = HAL_COMM_ReceiveByte();
                 return;
             }
         }
@@ -152,9 +158,9 @@ static uint8_t HMI_ReadPasswordUntilHash(char *buf, uint8_t maxLen)
     {
         char k = HMI_WaitKey();
 
-        if (k == '#') { break; }  /* Terminate on '#' */
+        if (k == 'C') { break; }  /* Terminate on '#' */
 
-        if (k == '*')  /* Clear input */
+        if (k == '7')  /* Clear input */
         {
             i = 0;
             Lcd_GoToRowColumn(1, 0);
@@ -200,6 +206,34 @@ static void HMI_ShowMessage(const char *line1, const char *line2, uint32_t delay
     if (delayMs > 0U) { MCAL_SysTick_DelayMs(delayMs); }
 }
 
+static void HMI_HandleLockout(void)
+{
+    /* Block user interaction for 10 seconds, then return to main menu */
+    for (uint8_t remaining = LOCKOUT_WAIT_SECONDS; remaining > 0U; remaining--)
+    {
+        Lcd_Clear();
+        Lcd_GoToRowColumn(0, 0);
+        Lcd_DisplayString("LOCKOUT");
+        Lcd_GoToRowColumn(1, 0);
+        Lcd_DisplayString("Wait ");
+
+        if (remaining < 10U)
+        {
+            Lcd_DisplayCharacter('0');
+            Lcd_DisplayCharacter((char)('0' + remaining));
+        }
+        else
+        {
+            Lcd_DisplayCharacter((char)('0' + (remaining / 10U)));
+            Lcd_DisplayCharacter((char)('0' + (remaining % 10U)));
+        }
+        Lcd_DisplayString("s");
+
+        /* Ignore input during lockout window */
+        MCAL_SysTick_DelayMs(1000U);
+    }
+}
+
 /*======================================================================
  *  Handlers
  *====================================================================*/
@@ -221,6 +255,12 @@ static void Handle_SetupPassword(void)
     
     /* Wait for response */
     resp = HMI_WaitResponse();
+
+    if (resp == RESP_LOCKOUT)
+    {
+        HMI_HandleLockout();
+        return;
+    }
     
     /* If password already set, skip setup */
     if (resp == RESP_FAILURE)
@@ -374,7 +414,7 @@ static void Handle_OpenDoor(void)
     }
     else if (resp == RESP_LOCKOUT)
     {
-        HMI_ShowMessage("LOCKOUT", "", 1500U);
+        HMI_HandleLockout();
     }
     else
     {
@@ -433,7 +473,7 @@ static void Handle_ChangePassword(void)
     }
     else if (resp == RESP_LOCKOUT)
     {
-        HMI_ShowMessage("LOCKOUT", "", 1500U);
+        HMI_HandleLockout();
     }
     else
     {
@@ -463,11 +503,11 @@ static void Handle_SetTimeout(void)
         Lcd_DisplayString(buf);
 
         char k = HAL_Keypad_GetKey();
-        if (k == '#')
+        if (k == 'C')
         {
             break; /* confirm */
         }
-        else if (k == '*')
+        else if (k == '7')
         {
             return; /* cancel */
         }
@@ -496,7 +536,7 @@ static void Handle_SetTimeout(void)
     }
     else if (resp == RESP_LOCKOUT)
     {
-        HMI_ShowMessage("LOCKOUT", "", 1500U);
+        HMI_HandleLockout();
     }
     else
     {
