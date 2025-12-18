@@ -102,6 +102,7 @@ static void HandleChangePassword(void);
 static void HandleSetTimeout(void);
 static void ActivateLockout(void);
 static void OpenDoorSequence(uint32_t timeoutSeconds);
+static void COMM_FlushRx(void);
 
 /*======================================================================
  *  Main Function
@@ -167,6 +168,7 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
+                        COMM_FlushRx();
                     }
                     break;
                     
@@ -178,6 +180,7 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
+                        COMM_FlushRx();
                     }
                     break;
                     
@@ -189,6 +192,7 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
+                        COMM_FlushRx();
                     }
                     break;
                     
@@ -200,6 +204,7 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
+                        COMM_FlushRx();
                     }
                     break;
                     
@@ -494,13 +499,18 @@ static void HandleOpenDoor(void)
     else
     {
         /* Wrong password */
-        HAL_COMM_SendByte(RESP_FAILURE);
+        //HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();
         wrongAttempts++;
         
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
+            HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
+        }
+        else
+        {
+            HAL_COMM_SendByte(RESP_FAILURE);
         }
     }
 }
@@ -543,12 +553,16 @@ static void HandleChangePassword(void)
     /* Verify old password */
     if (!HAL_EEPROM_VerifyPassword(oldPassword, oldLen))
     {
-        HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();
         wrongAttempts++;
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
+            HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
+        }
+        else
+        {
+            HAL_COMM_SendByte(RESP_FAILURE);
         }
         return;
     }
@@ -673,12 +687,16 @@ static void HandleSetTimeout(void)
     /* Verify password */
     if (!HAL_EEPROM_VerifyPassword(password, pwdLen))
     {
-        HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();
         wrongAttempts++;
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
+            HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
+        }
+        else
+        {
+            HAL_COMM_SendByte(RESP_FAILURE);
         }
         return;
     }
@@ -716,12 +734,23 @@ static void ActivateLockout(void)
     isLockedOut = TRUE;
     wrongAttempts = 0U;
     LED_SetRed();
-    
+
     /* Sound buzzer for lockout duration */
     BUZZER_beep(LOCKOUT_BUZZER_DURATION);
+
+    /* Drop any queued bytes sent during lockout (prevents stale commands) */
+    COMM_FlushRx();
     
     /* After lockout period, clear lockout flag (system returns to main menu) */
     isLockedOut = FALSE;
+}
+
+static void COMM_FlushRx(void)
+{
+    while (HAL_COMM_IsDataAvailable())
+    {
+        (void)HAL_COMM_ReceiveByte();
+    }
 }
 
 /**
