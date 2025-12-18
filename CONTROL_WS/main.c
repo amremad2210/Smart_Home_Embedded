@@ -65,7 +65,7 @@
 
 /* Password Configuration */
 #define PASSWORD_MAX_LENGTH     (16U)  /* Maximum password length (matches HAL_EEPROM) */
-#define PASSWORD_MIN_LENGTH     (4U)   /* Minimum password length (matches HAL_EEPROM) */
+#define PASSWORD_MIN_LENGTH     (5U)   /* Minimum password length (matches HAL_EEPROM) */
 #define MAX_PASSWORD_ATTEMPTS   (3U)   /* Maximum wrong attempts before lockout */
 #define LOCKOUT_BUZZER_DURATION (10000U)  /* 10 seconds buzzer on lockout */
 
@@ -552,13 +552,19 @@ static void HandleChangePassword(void)
     /* Verify old password */
     if (!HAL_EEPROM_VerifyPassword(oldPassword, oldLen))
     {
-        HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();
         wrongAttempts++;
+
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
+            HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
-        }else
+        }
+        else
+        {
+            HAL_COMM_SendByte(RESP_FAILURE);
+        }
+
         return;
     }
     
@@ -682,12 +688,17 @@ static void HandleSetTimeout(void)
     /* Verify password */
     if (!HAL_EEPROM_VerifyPassword(password, pwdLen))
     {
-        HAL_COMM_SendByte(RESP_FAILURE);
         LED_SetRed();
         wrongAttempts++;
+
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
+            HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
+        }
+        else
+        {
+            HAL_COMM_SendByte(RESP_FAILURE);
         }
         return;
     }

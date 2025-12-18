@@ -17,7 +17,7 @@
 
 /* Password configuration */
 #define HAL_EEPROM_PASSWORD_MAX_LENGTH      (16U)   /* Maximum password length in characters */
-#define HAL_EEPROM_PASSWORD_MIN_LENGTH      (4U)    /* Minimum password length in characters */
+#define HAL_EEPROM_PASSWORD_MIN_LENGTH      (5U)    /* Minimum password length in characters */
 
 /* EEPROM memory layout */
 #define HAL_EEPROM_PASSWORD_START_ADDR      (0U)    /* Password storage start address */
