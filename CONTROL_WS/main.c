@@ -120,7 +120,6 @@ int main(void)
     
     /* Initialize EEPROM */
     eepromResult = HAL_EEPROM_Init();
-    HAL_EEPROM_ClearPassword();
     if (eepromResult != HAL_EEPROM_SUCCESS)
     {
         /* EEPROM initialization failed - indicate error with red LED */
@@ -129,6 +128,14 @@ int main(void)
         // {
         //     /* System cannot function without EEPROM */
         // }
+    }
+    else
+    {
+        /* Factory-reset behavior: clear stored password on every startup */
+        if (HAL_EEPROM_ClearPassword() != HAL_EEPROM_SUCCESS)
+        {
+            LED_SetRed();
+        }
     }
     
     /* Load timeout value from EEPROM */
@@ -142,6 +149,8 @@ int main(void)
     
     /* Send ready signal to HMI */
     HAL_COMM_SendByte(CMD_READY);
+    /* HMI waits for this byte after seeing CMD_READY */
+    HAL_COMM_SendByte((uint8_t)currentTimeout);
     
     /* Main application loop */
     while(1)
@@ -490,13 +499,17 @@ static void HandleOpenDoor(void)
     else
     {
         /* Wrong password */
-        HAL_COMM_SendByte(RESP_FAILURE);
+        
         LED_SetRed();
         wrongAttempts++;
         
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
+          HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
+        }
+        else{
+          HAL_COMM_SendByte(RESP_FAILURE);
         }
     }
 }
@@ -545,7 +558,7 @@ static void HandleChangePassword(void)
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
             ActivateLockout();
-        }
+        }else
         return;
     }
     
@@ -712,6 +725,8 @@ static void ActivateLockout(void)
     isLockedOut = TRUE;
     wrongAttempts = 0U;
     LED_SetRed();
+
+    //HAL_COMM_SendByte(RESP_LOCKOUT);
     
     /* Sound buzzer for lockout duration */
     BUZZER_beep(LOCKOUT_BUZZER_DURATION);

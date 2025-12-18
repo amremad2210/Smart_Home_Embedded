@@ -89,7 +89,7 @@ int main(void)
         {
             Handle_ChangePassword();
         }
-        else if (key == 'C')
+        else if (key == '*')
         {
             Handle_SetTimeout();
         }
@@ -157,9 +157,9 @@ static uint8_t HMI_ReadPasswordUntilHash(char *buf, uint8_t maxLen)
     {
         char k = HMI_WaitKey();
 
-        if (k == 'C') { break; }  /* Terminate on '#' */
+        if (k == '#') { break; }  /* Terminate on '#' */
 
-        if (k == '7')  /* Clear input */
+        if (k == '*')  /* Clear input */
         {
             i = 0;
             Lcd_GoToRowColumn(1, 0);
@@ -171,7 +171,7 @@ static uint8_t HMI_ReadPasswordUntilHash(char *buf, uint8_t maxLen)
         if (i < maxLen)
         {
             buf[i++] = k;
-            Lcd_DisplayCharacter(k);  /* Display actual digit */
+            Lcd_DisplayCharacter('*');  /* Display actual digit */
         }
         /* Ignore extra keys beyond maxLen */
     }
