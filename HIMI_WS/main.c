@@ -20,7 +20,7 @@
 #include "hal/hal_comm.h"
 
 #define PASSWORD_MAX_LENGTH     16U  /* Maximum password length (matches EEPROM HAL) */
-#define PASSWORD_MIN_LENGTH     4U   /* Minimum password length (matches EEPROM HAL) */
+#define PASSWORD_MIN_LENGTH     5U   /* Minimum password length (matches EEPROM HAL) */
 #define TIMEOUT_MIN_SECONDS     5U
 #define TIMEOUT_MAX_SECONDS     30U
 #define TIMEOUT_DEFAULT_SECONDS 15U  /* Default timeout if not set */
@@ -66,7 +66,6 @@ int main(void)
 
     HMI_Init();
     HMI_WaitForReady();
-    
 
     /* Check if password needs to be set for the first time */
     Handle_SetupPassword();
@@ -90,13 +89,13 @@ int main(void)
         {
             Handle_ChangePassword();
         }
-        else if (key == 'C')
+        else if (key == '*')
         {
             Handle_SetTimeout();
         }
     }
 
-   // return 0;
+    return 0;
 }
 
 /*======================================================================
@@ -158,9 +157,9 @@ static uint8_t HMI_ReadPasswordUntilHash(char *buf, uint8_t maxLen)
     {
         char k = HMI_WaitKey();
 
-        if (k == 'C') { break; }  /* Terminate on '#' */
+        if (k == '#') { break; }  /* Terminate on '#' */
 
-        if (k == '7')  /* Clear input */
+        if (k == '*')  /* Clear input */
         {
             i = 0;
             Lcd_GoToRowColumn(1, 0);
@@ -172,7 +171,7 @@ static uint8_t HMI_ReadPasswordUntilHash(char *buf, uint8_t maxLen)
         if (i < maxLen)
         {
             buf[i++] = k;
-            Lcd_DisplayCharacter(k);  /* Display actual digit */
+            Lcd_DisplayCharacter('*');  /* Display actual digit */
         }
         /* Ignore extra keys beyond maxLen */
     }
@@ -281,7 +280,7 @@ static void Handle_SetupPassword(void)
         /* Validate length */
         if (len1 < PASSWORD_MIN_LENGTH)
         {
-            HMI_ShowMessage("Too Short!", "Min 4 digits", 1500U);
+            HMI_ShowMessage("Too Short!", "Min 5 digits", 1500U);
             continue;
         }
 
@@ -446,7 +445,7 @@ static void Handle_ChangePassword(void)
     /* Validate new password length */
     if (newLen < PASSWORD_MIN_LENGTH)
     {
-        HMI_ShowMessage("Too Short!", "Min 4 digits", 1500U);
+        HMI_ShowMessage("Too Short!", "Min 5 digits", 1500U);
         return;
     }
 
@@ -503,11 +502,11 @@ static void Handle_SetTimeout(void)
         Lcd_DisplayString(buf);
 
         char k = HAL_Keypad_GetKey();
-        if (k == 'C')
+        if (k == '#')
         {
             break; /* confirm */
         }
-        else if (k == '7')
+        else if (k == '*')
         {
             return; /* cancel */
         }

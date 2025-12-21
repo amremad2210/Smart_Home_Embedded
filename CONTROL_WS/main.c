@@ -65,7 +65,7 @@
 
 /* Password Configuration */
 #define PASSWORD_MAX_LENGTH     (16U)  /* Maximum password length (matches HAL_EEPROM) */
-#define PASSWORD_MIN_LENGTH     (4U)   /* Minimum password length (matches HAL_EEPROM) */
+#define PASSWORD_MIN_LENGTH     (5U)   /* Minimum password length (matches HAL_EEPROM) */
 #define MAX_PASSWORD_ATTEMPTS   (3U)   /* Maximum wrong attempts before lockout */
 #define LOCKOUT_BUZZER_DURATION (10000U)  /* 10 seconds buzzer on lockout */
 
@@ -102,7 +102,6 @@ static void HandleChangePassword(void);
 static void HandleSetTimeout(void);
 static void ActivateLockout(void);
 static void OpenDoorSequence(uint32_t timeoutSeconds);
-static void COMM_FlushRx(void);
 
 /*======================================================================
  *  Main Function
@@ -118,12 +117,9 @@ int main(void)
     
     /* Initialize all hardware modules */
     System_Init();
-
- 
     
     /* Initialize EEPROM */
     eepromResult = HAL_EEPROM_Init();
-    
     if (eepromResult != HAL_EEPROM_SUCCESS)
     {
         /* EEPROM initialization failed - indicate error with red LED */
@@ -133,27 +129,27 @@ int main(void)
         //     /* System cannot function without EEPROM */
         // }
     }
-
-    HAL_EEPROM_ClearPassword();
+    else
+    {
+        /* Factory-reset behavior: clear stored password on every startup */
+        if (HAL_EEPROM_ClearPassword() != HAL_EEPROM_SUCCESS)
+        {
+            LED_SetRed();
+        }
+    }
     
     /* Load timeout value from EEPROM */
     currentTimeout = EEPROM_ReadTimeout();
-    if (currentTimeout < TIMEOUT_MIN_SECONDS || currentTimeout > TIMEOUT_MAX_SECONDS)
-    {
-        /* Invalid timeout, use default */
-        currentTimeout = TIMEOUT_DEFAULT_SECONDS;
-        EEPROM_StoreTimeout(currentTimeout);
-    }
+    // if (currentTimeout < TIMEOUT_MIN_SECONDS || currentTimeout > TIMEOUT_MAX_SECONDS)
+    // {
+    //     /* Invalid timeout, use default */
+    //     currentTimeout = TIMEOUT_DEFAULT_SECONDS;
+    //     EEPROM_StoreTimeout(currentTimeout);
+    // }
     
     /* Send ready signal to HMI */
     HAL_COMM_SendByte(CMD_READY);
-    HAL_COMM_SendByte(CMD_READY);
-    HAL_COMM_SendByte(CMD_READY);
-
-    
-    //HAL_EEPROM_ClearPassword();  /* For testing: clear existing password */
-    
-    /* Send current timeout value to HMI */
+    /* HMI waits for this byte after seeing CMD_READY */
     HAL_COMM_SendByte((uint8_t)currentTimeout);
     
     /* Main application loop */
@@ -176,7 +172,6 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
-                        COMM_FlushRx();
                     }
                     break;
                     
@@ -188,7 +183,6 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
-                        COMM_FlushRx();
                     }
                     break;
                     
@@ -200,7 +194,6 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
-                        COMM_FlushRx();
                     }
                     break;
                     
@@ -212,7 +205,6 @@ int main(void)
                     else
                     {
                         HAL_COMM_SendByte(RESP_LOCKOUT);
-                        COMM_FlushRx();
                     }
                     break;
                     
@@ -222,8 +214,11 @@ int main(void)
             }
         }
         
-        /* Small delay to prevent busy-waiting */
-        MCAL_SysTick_DelayMs(10U);
+        /* Keep this delay small:
+         * UART1 runs at 115200 and has a limited RX FIFO. Large idle delays can
+         * let an entire command frame arrive without being drained, causing RX
+         * FIFO overflow and the receiver to block forever waiting for missing bytes. */
+        MCAL_SysTick_DelayMs(1U);
     }
     
     //return 0;
@@ -507,18 +502,17 @@ static void HandleOpenDoor(void)
     else
     {
         /* Wrong password */
-        //HAL_COMM_SendByte(RESP_FAILURE);
+        
         LED_SetRed();
         wrongAttempts++;
         
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
-            HAL_COMM_SendByte(RESP_LOCKOUT);
+          HAL_COMM_SendByte(RESP_LOCKOUT);
             ActivateLockout();
         }
-        else
-        {
-            HAL_COMM_SendByte(RESP_FAILURE);
+        else{
+          HAL_COMM_SendByte(RESP_FAILURE);
         }
     }
 }
@@ -563,6 +557,7 @@ static void HandleChangePassword(void)
     {
         LED_SetRed();
         wrongAttempts++;
+
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
             HAL_COMM_SendByte(RESP_LOCKOUT);
@@ -572,6 +567,7 @@ static void HandleChangePassword(void)
         {
             HAL_COMM_SendByte(RESP_FAILURE);
         }
+
         return;
     }
     
@@ -697,6 +693,7 @@ static void HandleSetTimeout(void)
     {
         LED_SetRed();
         wrongAttempts++;
+
         if (wrongAttempts >= MAX_PASSWORD_ATTEMPTS)
         {
             HAL_COMM_SendByte(RESP_LOCKOUT);
@@ -743,22 +740,13 @@ static void ActivateLockout(void)
     wrongAttempts = 0U;
     LED_SetRed();
 
+    //HAL_COMM_SendByte(RESP_LOCKOUT);
+    
     /* Sound buzzer for lockout duration */
     BUZZER_beep(LOCKOUT_BUZZER_DURATION);
-
-    /* Drop any queued bytes sent during lockout (prevents stale commands) */
-    COMM_FlushRx();
     
     /* After lockout period, clear lockout flag (system returns to main menu) */
     isLockedOut = FALSE;
-}
-
-static void COMM_FlushRx(void)
-{
-    while (HAL_COMM_IsDataAvailable())
-    {
-        (void)HAL_COMM_ReceiveByte();
-    }
 }
 
 /**
@@ -767,30 +755,24 @@ static void COMM_FlushRx(void)
  */
 static void OpenDoorSequence(uint32_t timeoutSeconds)
 {
-    /* Safety check: ensure timeout is valid */
-    if (timeoutSeconds < TIMEOUT_MIN_SECONDS || timeoutSeconds > TIMEOUT_MAX_SECONDS)
-    {
-        timeoutSeconds = TIMEOUT_DEFAULT_SECONDS;
-    }
-    
     /* 1. Unlock door (motor forward) */
     HAL_Motor_Move(MOTOR_FORWARD);
     
-    /* 2. Wait for bolt to fully retract (2 seconds) */
+    /* 2. Wait for bolt to retract (2 seconds) */
     MCAL_SysTick_DelayMs(2000U);
     
-    /* 3. Stop motor (door is now unlocked) */
+    /* 3. Stop motor (hold position) */
     HAL_Motor_Move(MOTOR_STOP);
     
-    /* 4. Wait for timeout period (door stays open, user can enter) */
+    /* 4. Wait for timeout period (user can enter) */
     MCAL_SysTick_DelayMs(timeoutSeconds * 1000U);
     
     /* 5. Lock door (motor backward) */
     HAL_Motor_Move(MOTOR_BACKWARD);
     
-    /* 6. Wait for bolt to fully extend (2 seconds) */
+    /* 6. Wait for bolt to extend (2 seconds) */
     MCAL_SysTick_DelayMs(2000U);
     
-    /* 7. Stop motor (door is now locked) */
+    /* 7. Stop motor */
     HAL_Motor_Move(MOTOR_STOP);
 }
