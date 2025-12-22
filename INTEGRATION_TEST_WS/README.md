@@ -258,4 +258,3 @@ The tests validate the complete HMI-Control communication protocol:
 - **Commands**: 'S' (setup), 'O' (open door), 'C' (change password), 'T' (timeout)
 - **Responses**: 'Y' (success), 'N' (failure), 'L' (lockout), 'R' (ready)
 - **Data Format**: Command byte + length byte(s) + data byte(s)
-
