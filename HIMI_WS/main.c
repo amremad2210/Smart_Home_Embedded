@@ -75,9 +75,9 @@ int main(void)
         /* Show main menu */
         Lcd_Clear();
         Lcd_GoToRowColumn(0, 0);
-        Lcd_DisplayString("A)Open  B)Change");
+        Lcd_DisplayString("+)Open  -)Change");
         Lcd_GoToRowColumn(1, 0);
-        Lcd_DisplayString("C)Timeout");
+        Lcd_DisplayString("=)Timeout");
 
         char key = HMI_WaitKey();
 
