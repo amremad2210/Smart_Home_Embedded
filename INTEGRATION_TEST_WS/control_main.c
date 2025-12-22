@@ -39,6 +39,9 @@
 #include "hal/hal_comm.h"
 #include "Types.h"
 
+/* Test mode flag */
+extern int test_mode_iterations;
+
 /*======================================================================
  *  Defines
  *====================================================================*/
@@ -107,7 +110,7 @@ static void OpenDoorSequence(uint32_t timeoutSeconds);
  *  Main Function
  *====================================================================*/
 
-int main(void)
+void Control_Main(void)
 {
     uint8_t command;
     uint8_t eepromResult;
@@ -155,6 +158,9 @@ int main(void)
     /* Main application loop */
     while(1)
     {
+        /* Test mode: limit iterations to prevent infinite loop */
+        if (test_mode_iterations >= 10) break;
+        
         /* Check if data is available from HMI */
         if (HAL_COMM_IsDataAvailable())
         {
@@ -212,6 +218,9 @@ int main(void)
                     /* Unknown command - ignore */
                     break;
             }
+
+            /* Test mode: exit after processing one command */
+            if (test_mode_iterations++ > 0) break;
         }
         
         /* Keep this delay small:

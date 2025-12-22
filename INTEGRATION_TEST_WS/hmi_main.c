@@ -25,6 +25,9 @@
 #define TIMEOUT_MAX_SECONDS     30U
 #define TIMEOUT_DEFAULT_SECONDS 15U  /* Default timeout if not set */
 
+/* Test mode flag */
+extern int test_mode_iterations;
+
 /*======================================================================
  *  Global Variables
  *====================================================================*/
@@ -60,7 +63,7 @@ static void Handle_OpenDoor(void);
 static void Handle_ChangePassword(void);
 static void Handle_SetTimeout(void);
 
-int main(void)
+void HMI_Main(void)
 {
     //SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
 
@@ -72,6 +75,9 @@ int main(void)
 
     while(1)
     {
+        /* Test mode: limit iterations */
+        if (test_mode_iterations >= 10) break;
+        
         /* Show main menu */
         Lcd_Clear();
         Lcd_GoToRowColumn(0, 0);
@@ -94,8 +100,6 @@ int main(void)
             Handle_SetTimeout();
         }
     }
-
-    return 0;
 }
 
 /*======================================================================

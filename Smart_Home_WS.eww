@@ -6,5 +6,8 @@
     <project>
         <path>$WS_DIR$\HIMI_WS\HIMI_WS.ewp</path>
     </project>
+    <project>
+        <path>$WS_DIR$\INTEGRATION_TEST_WS\IntegrationTest.ewp</path>
+    </project>
     <batchBuild />
 </workspace>

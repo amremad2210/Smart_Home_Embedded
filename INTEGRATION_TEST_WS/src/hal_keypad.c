@@ -1,0 +1,93 @@
+/*****************************************************************************
+ * File: hal_keypad.c
+ * Description: 4x4 Keypad Driver using MCAL_GPIO for TM4C123GH6PM
+ * Author: Your Name
+ * Date: [Current Date]
+ *****************************************************************************/
+
+#include "hal/hal_keypad.h"
+#include "driverlib/sysctl.h"  // For SYSCTL_PERIPH_GPIOx
+#include "mcal/mcal_systick.h" // For debounce delays
+
+/* Test variable */
+uint8_t simulated_key_press = 0;
+
+/* 
+ * Keypad mapping array.
+ * Each element represents the character returned for a specific key press.
+ * The array is organized as [row][column], matching the physical keypad layout.
+ */
+const uint8_t keypad_codes[KEYPAD_ROWS][KEYPAD_COLS] = {
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    {'*', '0', '#', 'D'}
+};
+
+/* 
+ * Arrays for pins (easier to loop through)
+ */
+static const uint8_t row_pins[KEYPAD_ROWS] = {
+    KEYPAD_ROW1_PIN,
+    KEYPAD_ROW2_PIN, 
+    KEYPAD_ROW3_PIN,
+    KEYPAD_ROW4_PIN
+};
+
+static const uint8_t col_pins[KEYPAD_COLS] = {
+    KEYPAD_COL1_PIN,
+    KEYPAD_COL2_PIN,
+    KEYPAD_COL3_PIN,
+    KEYPAD_COL4_PIN
+};
+
+/*
+ * HAL_Keypad_Init
+ * Initializes the GPIO pins for keypad operation using MCAL_GPIO.
+ * - Columns are set as outputs and driven HIGH (PortC).
+ * - Rows are set as inputs with internal pull-up resistors (PortA).
+ * This function must be called before using HAL_Keypad_GetKey.
+ */
+void HAL_Keypad_Init(void) {
+    /* Enable clock for GPIO ports */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOA);  /* Enable Port A for rows */
+    MCAL_GPIO_EnablePort(SYSCTL_PERIPH_GPIOC);  /* Enable Port C for columns */
+    
+    /* Configure all ROWS as INPUT with pull-up resistors */
+    for (uint8_t i = 0; i < KEYPAD_ROWS; i++) {
+        MCAL_GPIO_InitPin(KEYPAD_ROW_PORT, 
+                         row_pins[i], 
+                         GPIO_DIR_INPUT, 
+                         GPIO_ATTACH_PULLUP);
+    }
+    
+    /* Configure all COLUMNS as OUTPUT, initially HIGH */
+    for (uint8_t i = 0; i < KEYPAD_COLS; i++) {
+        MCAL_GPIO_InitPin(KEYPAD_COL_PORT, 
+                         col_pins[i], 
+                         GPIO_DIR_OUTPUT, 
+                         GPIO_ATTACH_DEFAULT);
+        /* Set column HIGH (inactive) */
+        MCAL_GPIO_WritePin(KEYPAD_COL_PORT, col_pins[i], LOGIC_HIGH);
+    }
+}
+
+/*
+ * HAL_Keypad_GetKey
+ * Scans the keypad and returns the character of the pressed key.
+ * Returns 0 if no key is pressed.
+ *
+ * Scanning logic (SAME as before, but using MCAL_GPIO):
+ *   1. Set each column LOW one at a time, others HIGH.
+ *   2. Read all row inputs; if any row reads LOW, a key is pressed.
+ *   3. Wait for key release (debounce).
+ *   4. Return the mapped character from keypad_codes.
+ */
+uint8_t HAL_Keypad_GetKey(void) {
+    if (simulated_key_press != 0) {
+        uint8_t key = simulated_key_press;
+        simulated_key_press = 0; // Reset after reading
+        return key;
+    }
+    return 0; // No key
+}
