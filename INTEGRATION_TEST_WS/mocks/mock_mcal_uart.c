@@ -15,12 +15,12 @@ bool is_hmi_active = false;
 
 /* Mock UART buffers */
 #define UART_BUFFER_SIZE 256
-static uint8_t hmi_to_control_buffer[UART_BUFFER_SIZE];
-static uint8_t control_to_hmi_buffer[UART_BUFFER_SIZE];
-static uint32_t hmi_to_control_head = 0;
-static uint32_t hmi_to_control_tail = 0;
-static uint32_t control_to_hmi_head = 0;
-static uint32_t control_to_hmi_tail = 0;
+uint8_t hmi_to_control_buffer[UART_BUFFER_SIZE];
+uint8_t control_to_hmi_buffer[UART_BUFFER_SIZE];
+uint32_t hmi_to_control_head = 0;
+uint32_t hmi_to_control_tail = 0;
+uint32_t control_to_hmi_head = 0;
+uint32_t control_to_hmi_tail = 0;
 
 /* UART base for simulation */
 #define UART1_BASE 0x4000D000  /* Mock base */
@@ -58,12 +58,14 @@ void sendByte(uint32_t uartBase, uint8_t data) {
             uint32_t next = (head + 1) % UART_BUFFER_SIZE;
             hmi_to_control_buffer[head] = data;
             hmi_to_control_head = next;
+            printf("UART MOCK: HMI sent 0x%02X to Control (head=%d, tail=%d)\n", data, hmi_to_control_head, hmi_to_control_tail);
         } else {
             /* Control sending to HMI */
             uint32_t head = control_to_hmi_head;
             uint32_t next = (head + 1) % UART_BUFFER_SIZE;
             control_to_hmi_buffer[head] = data;
             control_to_hmi_head = next;
+            printf("UART MOCK: Control sent 0x%02X to HMI (head=%d, tail=%d)\n", data, control_to_hmi_head, control_to_hmi_tail);
         }
     }
 }
@@ -81,10 +83,14 @@ uint8_t isDataAvailable(uint32_t uartBase) {
     if (uartBase == UART1_BASE) {
         if (is_hmi_active) {
             /* HMI checking for data from Control */
-            return (control_to_hmi_tail != control_to_hmi_head) ? 1 : 0;
+            uint8_t available = (control_to_hmi_tail != control_to_hmi_head) ? 1 : 0;
+            printf("UART MOCK: HMI checking data from Control: %d (head=%d, tail=%d)\n", available, control_to_hmi_head, control_to_hmi_tail);
+            return available;
         } else {
             /* Control checking for data from HMI */
-            return (hmi_to_control_tail != hmi_to_control_head) ? 1 : 0;
+            uint8_t available = (hmi_to_control_tail != hmi_to_control_head) ? 1 : 0;
+            printf("UART MOCK: Control checking data from HMI: %d (head=%d, tail=%d)\n", available, hmi_to_control_head, hmi_to_control_tail);
+            return available;
         }
     }
     return 0;
